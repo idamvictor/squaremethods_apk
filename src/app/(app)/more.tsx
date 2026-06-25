@@ -4,11 +4,11 @@ import { router } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
 
 const NAV_ITEMS = [
-  { label: 'Job Aids', icon: '📋' },
-  { label: 'Tasks', icon: '✅' },
-  { label: 'Teams', icon: '👥' },
-  { label: 'Failure Mode', icon: '⚠️' },
-  { label: 'Settings', icon: '⚙️' },
+  { label: 'Job Aids', icon: '📋', href: null },
+  { label: 'Tasks', icon: '✅', href: null },
+  { label: 'Teams', icon: '👥', href: null },
+  { label: 'Failure Mode', icon: '⚠️', href: null },
+  { label: 'Settings', icon: '⚙️', href: '/(app)/(settings)' as const },
 ]
 
 export default function MoreScreen() {
@@ -31,7 +31,10 @@ export default function MoreScreen() {
         <View className="bg-white rounded-2xl overflow-hidden">
           {NAV_ITEMS.map((item, index) => (
             <View key={item.label}>
-              <Pressable className="flex-row items-center px-4 py-3.5 active:bg-gray-50 gap-x-3">
+              <Pressable
+                onPress={() => item.href ? router.push(item.href) : undefined}
+                className="flex-row items-center px-4 py-3.5 active:bg-gray-50 gap-x-3"
+              >
                 <Text className="text-base">{item.icon}</Text>
                 <Text className="flex-1 text-sm font-medium text-gray-700">{item.label}</Text>
                 <Text className="text-gray-300">›</Text>
