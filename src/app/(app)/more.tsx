@@ -1,22 +1,24 @@
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { Pressable, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
 
 const NAV_ITEMS = [
   { label: 'Job Aids', icon: '📋', href: null },
-  { label: 'Tasks', icon: '✅', href: null },
+  { label: 'Tasks', icon: '✅', href: '/(app)/(tasks)' as const },
   { label: 'Failure Mode', icon: '⚠️', href: '/(app)/(failure-mode)' as const },
   { label: 'Settings', icon: '⚙️', href: '/(app)/(settings)' as const },
 ]
 
 export default function MoreScreen() {
+  const insets = useSafeAreaInsets()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="flex-1 px-4 py-6 gap-y-6">
+    <View className="flex-1 bg-gray-50">
+      <View style={{ height: insets.top }} className="bg-black" />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24, gap: 24 }}>
         {/* User info */}
         <View className="bg-white rounded-2xl p-4 gap-y-1">
           <Text className="text-base font-semibold text-gray-900">
@@ -52,7 +54,7 @@ export default function MoreScreen() {
         >
           <Text className="text-sm font-semibold text-red-500">Sign Out</Text>
         </Pressable>
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </View>
   )
 }
