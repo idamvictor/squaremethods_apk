@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MetricCard } from './MetricCard'
 import { TrendChart } from './TrendChart'
 import { useDashboard, useProfile } from '@/services/users/users-queries'
@@ -16,6 +17,7 @@ export function AdminDashboard() {
   const storedUser = useAuthStore((s) => s.user)
   const { data, isLoading, isError, error, refetch, isRefetching } = useDashboard()
   const { data: profileData } = useProfile()
+  const insets = useSafeAreaInsets()
 
   const user = profileData?.data ?? storedUser
   const stats = data?.data.stats
@@ -28,13 +30,13 @@ export function AdminDashboard() {
   return (
     <ScrollView
       className="flex-1 bg-gray-50"
-      contentContainerStyle={{ padding: 16, gap: 16 }}
+      contentContainerStyle={{ padding: 16, paddingTop: insets.top + 16, gap: 16 }}
       refreshControl={
         <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#208AEF" />
       }
     >
       {/* Greeting */}
-      <View className="gap-y-1 pt-2">
+      <View className="gap-y-1">
         <Text className="text-2xl font-bold text-gray-900">
           {getGreeting()}{user?.first_name ? `, ${user.first_name}` : ''} 👋
         </Text>
