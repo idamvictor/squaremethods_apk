@@ -6,8 +6,7 @@ import { useAuthStore } from '@/store/auth-store'
 const NAV_ITEMS = [
   { label: 'Job Aids', icon: '📋', href: null },
   { label: 'Tasks', icon: '✅', href: null },
-  { label: 'Teams', icon: '👥', href: null },
-  { label: 'Failure Mode', icon: '⚠️', href: null },
+  { label: 'Failure Mode', icon: '⚠️', href: '/(app)/(failure-mode)' as const },
   { label: 'Settings', icon: '⚙️', href: '/(app)/(settings)' as const },
 ]
 
