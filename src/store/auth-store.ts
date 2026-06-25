@@ -4,7 +4,8 @@ import type { User, Company } from '@/types/auth'
 
 const TOKEN_KEY = 'auth_token'
 const COMPANY_KEY = 'auth_company'
-const API_BASE = 'https://api.squaremethods.com/api'
+const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG ?? 'chowdeck'
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.squaremethods.com/api'
 
 function decodeJwtExp(token: string): number | null {
   try {
@@ -74,7 +75,9 @@ export const useAuthStore = create<AuthState>((set) => ({
               headers: {
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
-                ...(company?.slug ? { 'x-company-slug': company.slug } : {}),
+                'x-company-slug': COMPANY_SLUG,
+                'x-company': COMPANY_SLUG,
+                ...(company?.id ? { 'x-company-id': company.id } : {}),
               },
             })
             if (res.ok) {

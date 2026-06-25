@@ -2,6 +2,9 @@ import * as React from 'react'
 import { useState } from 'react'
 import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native'
 import { AreaChart } from 'react-native-gifted-charts'
+
+// Guard against the library not being fully resolved at render time
+const SafeAreaChart = AreaChart as React.ComponentType<React.ComponentProps<typeof AreaChart>> | undefined
 import { cn } from '@/lib/utils'
 import type { DashboardGraphData } from '@/services/users/users-types'
 
@@ -59,8 +62,8 @@ export function TrendChart({ graphData }: TrendChartProps) {
       <Text className="text-3xl font-bold text-gray-900">{total}</Text>
 
       {/* Chart */}
-      {chartData.length > 1 ? (
-        <AreaChart
+      {chartData.length > 1 && SafeAreaChart ? (
+        <SafeAreaChart
           data={chartData}
           width={CHART_WIDTH}
           height={140}
