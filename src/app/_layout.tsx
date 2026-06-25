@@ -1,6 +1,6 @@
 import '../../global.css'
 import { useEffect } from 'react'
-import { Stack } from 'expo-router'
+import { Stack, router } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth-store'
 
@@ -14,10 +14,19 @@ const queryClient = new QueryClient({
 export default function RootLayout() {
   const loadToken = useAuthStore((s) => s.loadToken)
   const isLoading = useAuthStore((s) => s.isLoading)
+  const needsLoginRedirect = useAuthStore((s) => s.needsLoginRedirect)
+  const clearLoginRedirect = useAuthStore((s) => s.clearLoginRedirect)
 
   useEffect(() => {
     loadToken()
   }, [loadToken])
+
+  useEffect(() => {
+    if (needsLoginRedirect && !isLoading) {
+      clearLoginRedirect()
+      router.replace('/(auth)/login')
+    }
+  }, [needsLoginRedirect, isLoading, clearLoginRedirect])
 
   if (isLoading) {
     return null

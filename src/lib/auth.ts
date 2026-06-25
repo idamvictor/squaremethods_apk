@@ -21,7 +21,7 @@ export function useLogin() {
     },
     onSuccess: async ({ data }) => {
       await setAuth(data.token, data.user, data.company)
-      router.replace('/(app)/dashboard')
+      router.replace('/home')
     },
   })
 }
