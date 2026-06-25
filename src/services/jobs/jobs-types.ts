@@ -93,3 +93,42 @@ export interface JobsQueryParams {
   team_id?: string
   assigned_to?: string
 }
+
+export interface JobWithRelations extends Job {
+  creator: { id: string; first_name: string; last_name: string; email: string }
+}
+
+export interface UpdateTaskInput {
+  status: 'pending' | 'completed'
+  notes: string
+}
+
+export interface CompleteJobInput {
+  completion_notes: string
+}
+
+export interface CreateJobInput {
+  team_id: string
+  assigned_to: string
+  title: string
+  description: string
+  priority: JobPriority
+  due_date: string
+  estimated_duration: number
+  safety_notes: string
+  task_ids: string[]
+  equipment_id?: string | null
+}
+
+export interface UpdateJobInput {
+  jobId: string
+  title?: string
+  description?: string
+  priority?: JobPriority
+  due_date?: string
+  estimated_duration?: number
+  safety_notes?: string
+  equipment_id?: string | null
+  team_id?: string
+  assigned_to?: string
+}

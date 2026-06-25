@@ -39,7 +39,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="jobs"
+        name="(jobs)"
         options={{
           title: 'Jobs',
           tabBarIcon: ({ color, size }) => (
