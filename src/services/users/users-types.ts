@@ -59,3 +59,18 @@ export interface ProfileResponse {
   message: string
   data: UserProfile
 }
+
+export interface CompanyUser {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  role: string
+  avatar_url: string | null
+}
+
+export interface CompanyUsersResponse {
+  success: boolean
+  data: CompanyUser[]
+  meta: { total: number; page: number; limit: number; totalPages: number }
+}

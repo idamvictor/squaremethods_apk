@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/lib/axios'
-import type { AdminDashboardResponse, ProfileResponse } from './users-types'
+import type { AdminDashboardResponse, ProfileResponse, CompanyUsersResponse } from './users-types'
 
 export function useDashboard() {
   return useQuery({
@@ -48,6 +48,18 @@ export function useDeleteAccount(userId: string) {
   return useMutation({
     mutationFn: async () => {
       const res = await apiClient.delete(`/users/${userId}`)
+      return res.data
+    },
+  })
+}
+
+export function useCompanyUsers(search?: string) {
+  return useQuery({
+    queryKey: ['users', 'company', search],
+    queryFn: async () => {
+      const res = await apiClient.get<CompanyUsersResponse>('/users', {
+        params: { page: 1, limit: 100, search: search || undefined },
+      })
       return res.data
     },
   })
