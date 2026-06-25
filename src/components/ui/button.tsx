@@ -53,10 +53,11 @@ type ButtonProps = PressableProps &
     label: string;
   };
 
-function Button({ label, variant, size, className, ...props }: ButtonProps) {
+function Button({ label, variant, size, className, disabled, ...props }: ButtonProps) {
   return (
     <Pressable
-      className={cn(buttonVariants({ variant, size }), className)}
+      className={cn(buttonVariants({ variant, size }), disabled && 'opacity-50', className)}
+      disabled={disabled}
       {...props}
     >
       <Text className={cn(buttonTextVariants({ variant, size }))}>
