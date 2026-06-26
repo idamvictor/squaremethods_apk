@@ -16,7 +16,8 @@ import { useTeamById, useUpdateTeam } from '@/services/teams/teams-queries'
 
 export default function EditTeamScreen() {
   const insets = useSafeAreaInsets()
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const params = useLocalSearchParams<{ id: string }>()
+  const id = Array.isArray(params.id) ? params.id[0] : params.id
   const { data: team, isLoading: teamLoading } = useTeamById(id)
   const { mutate: updateTeam, isPending, error: apiError } = useUpdateTeam()
 

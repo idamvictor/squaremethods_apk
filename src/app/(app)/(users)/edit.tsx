@@ -25,7 +25,8 @@ const ROLE_ITEMS = [
 
 export default function EditUserScreen() {
   const insets = useSafeAreaInsets()
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const params = useLocalSearchParams<{ id: string }>()
+  const id = Array.isArray(params.id) ? params.id[0] : params.id
   const { data: userData, isLoading: userLoading } = useUserById(id)
   const { mutate: updateUser, isPending, error: apiError } = useUpdateUser()
 

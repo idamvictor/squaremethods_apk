@@ -38,7 +38,8 @@ function toISODate(date: Date) {
 
 export default function EditFailureModeScreen() {
   const insets = useSafeAreaInsets()
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const params = useLocalSearchParams<{ id: string }>()
+  const id = Array.isArray(params.id) ? params.id[0] : params.id
   const { data: fm, isLoading: fmLoading } = useFailureModeById(id)
   const { mutate: updateFm, isPending, error: apiError } = useUpdateFailureMode()
 

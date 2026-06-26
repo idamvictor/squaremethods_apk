@@ -86,7 +86,8 @@ function PickerField({
 
 export default function EditJobScreen() {
   const insets = useSafeAreaInsets()
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const params = useLocalSearchParams<{ id: string }>()
+  const id = Array.isArray(params.id) ? params.id[0] : params.id
   const { data: job, isLoading: jobLoading } = useJobById(id)
   const { mutate: updateJob, isPending, error: apiError } = useUpdateJob()
 

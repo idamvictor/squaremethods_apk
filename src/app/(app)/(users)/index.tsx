@@ -65,7 +65,7 @@ function UserCard({ item, onPress }: { item: CompanyUser; onPress: () => void })
 export default function UsersScreen() {
   const insets = useSafeAreaInsets()
   const currentUser = useAuthStore((s) => s.user)
-  const isAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin'
+  const isAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin' || currentUser?.role === 'superadmin'
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')

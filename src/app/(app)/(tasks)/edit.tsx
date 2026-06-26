@@ -19,7 +19,8 @@ import type { JobAid, TaskEquipment } from '@/services/tasks/tasks-types'
 
 export default function EditTaskScreen() {
   const insets = useSafeAreaInsets()
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const params = useLocalSearchParams<{ id: string }>()
+  const id = Array.isArray(params.id) ? params.id[0] : params.id
   const { data: task, isLoading: taskLoading } = useTaskById(id)
   const { mutate: updateTask, isPending, error: apiError } = useUpdateTask()
   const { data: equipmentData, isLoading: equipmentLoading } = useEquipment()

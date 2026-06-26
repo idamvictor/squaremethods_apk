@@ -88,7 +88,8 @@ function MemberRow({
 
 export default function TeamDetailScreen() {
   const insets = useSafeAreaInsets()
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const params = useLocalSearchParams<{ id: string }>()
+  const id = Array.isArray(params.id) ? params.id[0] : params.id
   const user = useAuthStore((s) => s.user)
   const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
 

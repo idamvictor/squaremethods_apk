@@ -57,10 +57,11 @@ function InfoRow({
 
 export default function UserDetailScreen() {
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string }>();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const currentUser = useAuthStore((s) => s.user);
   const isAdmin =
-    currentUser?.role === "owner" || currentUser?.role === "admin";
+    currentUser?.role === "owner" || currentUser?.role === "admin" || currentUser?.role === "superadmin";
 
   const { data: userData, isLoading, error } = useUserById(id);
   const { mutate: activateUser } = useActivateUser();
@@ -75,7 +76,7 @@ export default function UserDetailScreen() {
       {
         text: "Edit",
         onPress: () =>
-          router.push({ pathname: "/(app)/(users)/edit", params: { id } }),
+          router.push({ pathname: "/(app)/(users)/edit", params: { id: id ?? "" } }),
       },
       {
         text: isActive ? "Deactivate" : "Activate",
