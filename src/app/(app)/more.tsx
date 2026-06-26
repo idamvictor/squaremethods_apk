@@ -1,6 +1,7 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { router } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '@/store/auth-store'
 
 const NAV_ITEMS = [
@@ -47,6 +48,20 @@ export default function MoreScreen() {
             </View>
           ))}
         </View>
+
+        {/* Admin Console — superadmin only */}
+        {user?.role === 'superadmin' && (
+          <View className="bg-white rounded-2xl overflow-hidden">
+            <Pressable
+              onPress={() => router.push('/(app)/(admin)')}
+              className="flex-row items-center px-4 py-3.5 active:bg-gray-50 gap-x-3"
+            >
+              <Ionicons name="shield-checkmark-outline" size={20} color="#208AEF" />
+              <Text className="flex-1 text-sm font-medium text-gray-700">Admin Console</Text>
+              <Text className="text-gray-300">›</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Sign out */}
         <Pressable

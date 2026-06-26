@@ -78,6 +78,7 @@ export default function AppLayout() {
       <Tabs.Screen name="(failure-mode)" options={{ href: null }} />
       <Tabs.Screen name="(tasks)" options={{ href: null }} />
       <Tabs.Screen name="(users)" options={{ href: null }} />
+      <Tabs.Screen name="(admin)" options={{ href: null }} />
     </Tabs>
   )
 }
