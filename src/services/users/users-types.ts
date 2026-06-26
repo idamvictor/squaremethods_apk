@@ -1,5 +1,27 @@
 import type { UserRole } from '@/types/auth'
 
+export interface UsersQueryParams {
+  page?: number
+  limit?: number
+  search?: string
+  role?: string
+  status?: 'active' | 'inactive'
+}
+
+export interface UpdateUserInput {
+  userId: string
+  first_name?: string
+  last_name?: string
+  phone?: string
+  role?: string
+}
+
+export interface InviteUsersInput {
+  emails: string[]
+  role: string
+  expires_in_days?: number
+}
+
 export interface DashboardStats {
   job_aid_created: number
   total_equipment: number
@@ -67,10 +89,26 @@ export interface CompanyUser {
   email: string
   role: string
   avatar_url: string | null
+  status?: 'active' | 'inactive'
+  is_active?: boolean
+  email_verified?: boolean
+  created_at?: string
+  team?: { id: string; name: string } | null
 }
 
 export interface CompanyUsersResponse {
   success: boolean
   data: CompanyUser[]
   meta: { total: number; page: number; limit: number; totalPages: number }
+}
+
+export interface UsersResponse {
+  success: boolean
+  data: CompanyUser[]
+  meta: { total: number; page: number; limit: number; totalPages: number }
+}
+
+export interface UserDetailResponse {
+  success: boolean
+  data: UserProfile
 }
