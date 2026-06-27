@@ -1,6 +1,38 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/lib/axios'
-import type { LocationsResponse } from './locations-types'
+import type {
+  CreateLocationInput,
+  DeleteLocationResponse,
+  LocationResponse,
+  LocationsResponse,
+} from './locations-types'
+
+export function useCreateLocation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateLocationInput) =>
+      apiClient.post<LocationResponse>('/locations', input).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations'] }),
+  })
+}
+
+export function useUpdateLocation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      apiClient.put<LocationResponse>(`/locations/${id}`, { name }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations'] }),
+  })
+}
+
+export function useDeleteLocation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.delete<DeleteLocationResponse>(`/locations/${id}`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations'] }),
+  })
+}
 
 export function useLocationsWithEquipment(search?: string) {
   return useQuery({

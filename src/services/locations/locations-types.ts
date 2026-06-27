@@ -22,3 +22,18 @@ export interface LocationsResponse {
   success: boolean
   data: Location[]
 }
+
+export interface CreateLocationInput {
+  name: string
+  parent_location_id?: string
+}
+
+export interface LocationResponse {
+  success: boolean
+  data: Location
+}
+
+export interface DeleteLocationResponse {
+  success: boolean
+  data: null
+}

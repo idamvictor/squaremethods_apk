@@ -10,7 +10,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useCreateEquipment } from '@/services/equipment/equipment-queries'
 import { useEquipmentTypes } from '@/services/equipment-types/equipment-types-queries'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
@@ -77,12 +77,16 @@ function PickerField({
 
 export default function CreateEquipmentScreen() {
   const insets = useSafeAreaInsets()
+  const params = useLocalSearchParams<{
+    prefill_location_id?: string
+    prefill_location_name?: string
+  }>()
   const { mutate: createEquipment, isPending, error: apiError } = useCreateEquipment()
 
   const [typeId, setTypeId] = useState('')
   const [typeName, setTypeName] = useState('')
-  const [locationId, setLocationId] = useState('')
-  const [locationName, setLocationName] = useState('')
+  const [locationId, setLocationId] = useState(params.prefill_location_id ?? '')
+  const [locationName, setLocationName] = useState(params.prefill_location_name ?? '')
   const [name, setName] = useState('')
   const [referenceCode, setReferenceCode] = useState('')
   const [status, setStatus] = useState<EquipmentStatus>('draft')
