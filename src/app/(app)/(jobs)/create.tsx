@@ -109,7 +109,9 @@ export default function CreateJobScreen() {
 
   const { data: teamsData, isLoading: teamsLoading } = useTeams()
   const { data: membersData, isLoading: membersLoading } = useTeamMembers(teamId || undefined)
-  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment(equipmentSearch || undefined)
+  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment(
+    equipmentSearch ? { search: equipmentSearch } : undefined,
+  )
 
   const teamItems = (teamsData?.data ?? []).map((t) => ({ label: t.name, value: t.id }))
   const memberItems = (membersData?.data ?? []).map((m) => ({

@@ -243,7 +243,7 @@ export default function TeamDetailScreen() {
       {/* Add Member bottom sheet */}
       <BottomSheetPicker
         visible={showAddMember}
-        onClose={() => { setShowAddMember(false); setMemberSearch('') }}
+        onClose={() => setShowAddMember(false)}
         title="Add Member"
         items={userPickerItems}
         selected=""
