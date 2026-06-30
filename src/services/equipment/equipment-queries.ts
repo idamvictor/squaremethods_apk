@@ -4,6 +4,7 @@ import type {
   CreateEquipmentInput,
   DeleteEquipmentResponse,
   EquipmentFilters,
+  EquipmentQRCodeResponse,
   EquipmentResponse,
   EquipmentStatsResponse,
   GetEquipmentResponse,
@@ -69,6 +70,26 @@ export function useUpdateEquipment() {
       qc.invalidateQueries({ queryKey: [EQ_KEY] })
       qc.invalidateQueries({ queryKey: [EQ_KEY, id] })
     },
+  })
+}
+
+export function useEquipmentQRCode(id: string | undefined) {
+  return useQuery({
+    queryKey: [EQ_KEY, id, 'qrcode'],
+    queryFn: async () => {
+      const res = await apiClient.get<EquipmentQRCodeResponse>(`/equipment/${id}/qrcode`)
+      return res.data
+    },
+    enabled: !!id,
+  })
+}
+
+export function useRegenerateEquipmentQRCode() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.post<EquipmentQRCodeResponse>(`/equipment/${id}/qrcode/regenerate`).then((r) => r.data),
+    onSuccess: (_, id) => qc.invalidateQueries({ queryKey: [EQ_KEY, id, 'qrcode'] }),
   })
 }
 

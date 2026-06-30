@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/lib/axios'
+import chatApiClient from '@/lib/chat-axios'
 import type {
   BrowseFile,
   CreateJobAidInput,
   CreateProcedureInput,
   DuplicateJobAidInput,
   FilesResponse,
+  GenerateJobAidInput,
+  GeneratedJobAidResponse,
   JobAidResponse,
   JobAidsQueryParams,
   JobAidsResponse,
@@ -106,6 +109,17 @@ export function useDuplicateJobAid() {
     mutationFn: ({ id, title }: DuplicateJobAidInput & { id: string }) =>
       apiClient
         .post<JobAidResponse>(`/job-aids/${id}/duplicate`, { title })
+        .then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] }),
+  })
+}
+
+export function useGenerateJobAid() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: GenerateJobAidInput) =>
+      chatApiClient
+        .post<GeneratedJobAidResponse>('/job-aids/generate', input)
         .then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] }),
   })

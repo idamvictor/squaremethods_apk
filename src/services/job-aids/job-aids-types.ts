@@ -175,3 +175,28 @@ export interface FilesResponse {
     totalPages: number
   }
 }
+
+export interface GenerateJobAidInput {
+  component_type: string
+  equipment_id: string
+  company_id: string
+  created_by: string
+}
+
+export interface GeneratedJobAidProcedure {
+  step: number
+  title: string
+  instruction: string
+  type: string
+  precautions: string[]
+}
+
+export interface GeneratedJobAidResponse {
+  id: string
+  title: string
+  instruction: string
+  category: string
+  estimated_duration: number
+  status: string
+  procedures: GeneratedJobAidProcedure[]
+}

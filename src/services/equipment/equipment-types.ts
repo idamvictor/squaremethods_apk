@@ -105,3 +105,13 @@ export interface DeleteEquipmentResponse {
   success: boolean
   data: null
 }
+
+export interface EquipmentQRCode {
+  url: string | null
+}
+
+export interface EquipmentQRCodeResponse {
+  success: boolean
+  message?: string
+  data: EquipmentQRCode
+}

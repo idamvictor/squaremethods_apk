@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
+import * as Print from 'expo-print'
+import * as Sharing from 'expo-sharing'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -19,8 +21,44 @@ import {
   usePublishJobAid,
   useUnpublishJobAid,
 } from '@/services/job-aids/job-aids-queries'
-import type { Procedure } from '@/services/job-aids/job-aids-types'
+import type { JobAid, Procedure } from '@/services/job-aids/job-aids-types'
 import { useAuthStore } from '@/store/auth-store'
+
+function buildJobAidHtml(jobAid: JobAid) {
+  const sortedProcedures = [...(jobAid.procedures ?? [])].sort((a, b) => a.step - b.step)
+  const proceduresHtml = sortedProcedures
+    .map(
+      (p) => `
+        <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #E5E7EB;">
+          <h3 style="margin:0 0 6px;font-size:15px;">Step ${p.step}: ${p.title || ''}</h3>
+          <p style="margin:0 0 8px;font-size:13px;color:#374151;">${p.instruction ?? ''}</p>
+          ${p.image ? `<img src="${p.image}" style="max-width:100%;border-radius:8px;margin-bottom:8px;" />` : ''}
+          ${
+            p.precautions?.length
+              ? `<ul style="margin:0;padding-left:18px;font-size:12px;color:#B45309;">${p.precautions
+                  .map((pr) => `<li>${pr.instruction}</li>`)
+                  .join('')}</ul>`
+              : ''
+          }
+        </div>`
+    )
+    .join('')
+
+  return `
+    <html>
+      <body style="font-family:-apple-system,Helvetica,Arial,sans-serif;padding:24px;">
+        ${jobAid.image ? `<img src="${jobAid.image}" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;margin-bottom:16px;" />` : ''}
+        <h1 style="font-size:22px;margin:0 0 4px;">${jobAid.title}</h1>
+        <p style="font-size:12px;color:#6B7280;margin:0 0 16px;">
+          ${jobAid.category ?? ''}${jobAid.estimated_duration != null ? ` · ${jobAid.estimated_duration} min` : ''}
+        </p>
+        <p style="font-size:14px;color:#374151;margin:0 0 24px;">${jobAid.instruction ?? ''}</p>
+        <h2 style="font-size:16px;margin:0 0 12px;">Step-by-Step Procedures</h2>
+        ${proceduresHtml}
+      </body>
+    </html>
+  `
+}
 
 const ADMIN_ROLES = ['superadmin', 'owner', 'admin']
 
@@ -47,6 +85,7 @@ export default function JobAidDetailScreen() {
   const isAdmin = ADMIN_ROLES.includes(user?.role ?? '')
 
   const [expanded, setExpanded] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   const { data, isLoading, error } = useJobAidById(id)
   const { mutate: deleteJobAid, isPending: isDeleting } = useDeleteJobAid()
@@ -101,6 +140,20 @@ export default function JobAidDetailScreen() {
     if (!jobAid) return
     Clipboard.setString(`/job-aids/${jobAid.slug}`)
     Alert.alert('Link copied', 'The job aid link has been copied to clipboard.')
+  }
+
+  async function handleExportPdf() {
+    if (!jobAid) return
+    setIsExporting(true)
+    try {
+      const html = buildJobAidHtml(jobAid)
+      const { uri } = await Print.printToFileAsync({ html })
+      await Sharing.shareAsync(uri)
+    } catch (e) {
+      Alert.alert('Export PDF', e instanceof Error ? e.message : 'Something went wrong')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   function handleProcedureMenu(procedure: Procedure) {
@@ -180,6 +233,18 @@ export default function JobAidDetailScreen() {
         <Text className="flex-1 text-base font-bold text-gray-900" numberOfLines={1}>
           Job Aid
         </Text>
+        <Pressable
+          onPress={handleExportPdf}
+          disabled={isExporting}
+          hitSlop={8}
+          className="active:opacity-60"
+        >
+          {isExporting ? (
+            <ActivityIndicator size="small" color="#4B5563" />
+          ) : (
+            <Ionicons name="download-outline" size={22} color="#4B5563" />
+          )}
+        </Pressable>
         <Pressable onPress={handleShare} hitSlop={8} className="active:opacity-60">
           <Ionicons name="share-social-outline" size={22} color="#4B5563" />
         </Pressable>
