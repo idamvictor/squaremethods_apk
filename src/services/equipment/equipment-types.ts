@@ -1,3 +1,6 @@
+import type { JobAid } from '@/services/job-aids/job-aids-types'
+import type { FailureMode } from '@/services/failure-mode/failure-mode-types'
+
 export type EquipmentStatus = 'draft' | 'published'
 
 export interface EquipmentType {
@@ -36,6 +39,8 @@ export interface Equipment {
   updated_at: string
   equipmentType: EquipmentType
   location: Location
+  jobAids?: JobAid[]
+  failureModes?: FailureMode[]
 }
 
 export interface EquipmentMeta {

@@ -1,23 +1,37 @@
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   Text,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
-import { useEquipmentById, useDeleteEquipment } from '@/services/equipment/equipment-queries'
+import { useEquipmentById, useDeleteEquipment, useUpdateEquipment } from '@/services/equipment/equipment-queries'
+import { useTasks } from '@/services/tasks/tasks-queries'
+import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
 import type { UserRole } from '@/types/auth'
+import type { JobAid } from '@/services/job-aids/job-aids-types'
+import type { FailureMode, FailureModeStatus } from '@/services/failure-mode/failure-mode-types'
+import type { Task } from '@/services/tasks/tasks-types'
 
 const ADMIN_ROLES: UserRole[] = ['superadmin', 'owner', 'admin']
 
 const STATUS_BADGE = {
   draft: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Draft' },
   published: { bg: 'bg-green-100', text: 'text-green-700', label: 'Published' },
+}
+
+const FM_STATUS_BADGE: Record<FailureModeStatus, { bg: string; text: string; label: string }> = {
+  open: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Open' },
+  in_progress: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'In Progress' },
+  resolved: { bg: 'bg-green-100', text: 'text-green-700', label: 'Resolved' },
 }
 
 function formatDate(dateStr: string | null | undefined) {
@@ -27,6 +41,17 @@ function formatDate(dateStr: string | null | undefined) {
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+function formatFileNameFromUrl(url: string) {
+  const last = url.split('/').pop() ?? url
+  return decodeURIComponent(last)
+}
+
+function fileExtension(url: string) {
+  const name = formatFileNameFromUrl(url)
+  const parts = name.split('.')
+  return parts.length > 1 ? parts.pop()!.toUpperCase() : 'FILE'
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -40,6 +65,107 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   )
 }
 
+function SectionHeader({
+  title,
+  count,
+  onViewAll,
+}: {
+  title: string
+  count: number
+  onViewAll: () => void
+}) {
+  return (
+    <View className="flex-row items-center justify-between mb-1">
+      <Text className="text-sm font-bold text-gray-900">{title}</Text>
+      {count > 3 && (
+        <Pressable onPress={onViewAll} className="active:opacity-60">
+          <Text className="text-xs font-semibold text-blue-600">View All {count} →</Text>
+        </Pressable>
+      )}
+    </View>
+  )
+}
+
+function JobAidPreviewRow({ item }: { item: JobAid }) {
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: '/(app)/(job-aids)/[id]', params: { id: item.id } })}
+      className="flex-row items-center gap-x-3 py-2.5 border-b border-gray-50 active:opacity-70"
+    >
+      <View
+        className="rounded-lg overflow-hidden flex-shrink-0"
+        style={{ width: 40, height: 40, backgroundColor: '#F3F4F6' }}
+      >
+        {item.image ? (
+          <Image
+            source={{ uri: item.image }}
+            style={{ width: 40, height: 40 }}
+            contentFit="cover"
+          />
+        ) : (
+          <View className="flex-1 items-center justify-center">
+            <Ionicons name="document-text-outline" size={18} color="#D1D5DB" />
+          </View>
+        )}
+      </View>
+      <View className="flex-1 gap-y-0.5 min-w-0">
+        <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text className="text-xs text-gray-400" numberOfLines={1}>
+          {item.category ?? 'Uncategorized'} · {item.status}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+    </Pressable>
+  )
+}
+
+function TaskPreviewRow({ item }: { item: Task }) {
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: '/(app)/(tasks)/[id]', params: { id: item.id } })}
+      className="flex-row items-center gap-x-3 py-2.5 border-b border-gray-50 active:opacity-70"
+    >
+      <View className="w-9 h-9 rounded-xl bg-blue-50 items-center justify-center flex-shrink-0">
+        <Ionicons name="checkbox-outline" size={18} color="#208AEF" />
+      </View>
+      <View className="flex-1 gap-y-0.5 min-w-0">
+        <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text className="text-xs text-gray-400" numberOfLines={1}>
+          {item.jobAids.length} job aid{item.jobAids.length !== 1 ? 's' : ''}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+    </Pressable>
+  )
+}
+
+function FailureModePreviewRow({ item }: { item: FailureMode }) {
+  const badge = FM_STATUS_BADGE[item.status] ?? FM_STATUS_BADGE.open
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: '/(app)/(failure-mode)/[id]', params: { id: item.id } })}
+      className="flex-row items-center gap-x-3 py-2.5 border-b border-gray-50 active:opacity-70"
+    >
+      <View className="flex-1 gap-y-0.5 min-w-0">
+        <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text className="text-xs text-gray-400" numberOfLines={1}>
+          Due {formatDate(item.due_date)}
+        </Text>
+      </View>
+      <View className={`px-2 py-0.5 rounded-full ${badge.bg}`}>
+        <Text className={`text-xs font-medium ${badge.text}`}>{badge.label}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+    </Pressable>
+  )
+}
+
 export default function EquipmentDetailScreen() {
   const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ id: string }>()
@@ -47,10 +173,15 @@ export default function EquipmentDetailScreen() {
   const user = useAuthStore((s) => s.user)
   const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
 
+  const [fileManagerOpen, setFileManagerOpen] = useState(false)
+
   const { data: equipmentData, isLoading, error } = useEquipmentById(id)
   const { mutate: deleteEquipment, isPending: isDeleting } = useDeleteEquipment()
+  const { mutate: updateEquipment, isPending: isUpdatingDocuments } = useUpdateEquipment()
 
   const equipment = equipmentData?.data
+  const { data: tasksData } = useTasks(id ? { equipment_id: id } : undefined)
+  const tasks = tasksData?.data ?? []
 
   function handleDelete() {
     if (!id) return
@@ -73,6 +204,27 @@ export default function EquipmentDetailScreen() {
       },
       { text: 'Delete', style: 'destructive', onPress: handleDelete },
       { text: 'Cancel', style: 'cancel' },
+    ])
+  }
+
+  function handleAddDocument(url: string) {
+    if (!id || !equipment) return
+    updateEquipment({ id, data: { documents: [...(equipment.documents ?? []), url] } })
+  }
+
+  function handleDeleteDocument(url: string) {
+    if (!id || !equipment) return
+    Alert.alert('Delete Document', `Remove "${formatFileNameFromUrl(url)}" from this equipment?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () =>
+          updateEquipment({
+            id,
+            data: { documents: (equipment.documents ?? []).filter((d) => d !== url) },
+          }),
+      },
     ])
   }
 
@@ -102,6 +254,9 @@ export default function EquipmentDetailScreen() {
   }
 
   const statusBadge = STATUS_BADGE[equipment.status] ?? STATUS_BADGE.draft
+  const jobAids = equipment.jobAids ?? []
+  const failureModes = equipment.failureModes ?? []
+  const documents = equipment.documents ?? []
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -196,7 +351,134 @@ export default function EquipmentDetailScreen() {
             <View className="w-2 h-2 rounded-full bg-green-400" />
           </View>
         )}
+
+        {/* Attached Job Aids */}
+        {jobAids.length > 0 && (
+          <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
+            <SectionHeader
+              title="Attached Job Aids"
+              count={jobAids.length}
+              onViewAll={() =>
+                router.push({
+                  pathname: '/(app)/(equipment)/job-aids-list',
+                  params: { equipment_id: id, title: equipment.name },
+                })
+              }
+            />
+            {jobAids.slice(0, 3).map((ja) => (
+              <JobAidPreviewRow key={ja.id} item={ja} />
+            ))}
+          </View>
+        )}
+
+        {/* Attached Tasks */}
+        {tasks.length > 0 && (
+          <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
+            <SectionHeader
+              title="Attached Tasks"
+              count={tasks.length}
+              onViewAll={() =>
+                router.push({
+                  pathname: '/(app)/(equipment)/tasks-list',
+                  params: { equipment_id: id, title: equipment.name },
+                })
+              }
+            />
+            {tasks.slice(0, 3).map((t) => (
+              <TaskPreviewRow key={t.id} item={t} />
+            ))}
+          </View>
+        )}
+
+        {/* Failure Mode */}
+        {failureModes.length > 0 && (
+          <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
+            <SectionHeader
+              title="Failure Mode"
+              count={failureModes.length}
+              onViewAll={() =>
+                router.push({
+                  pathname: '/(app)/(equipment)/failure-mode-list',
+                  params: { equipment_id: id, title: equipment.name },
+                })
+              }
+            />
+            {failureModes.slice(0, 3).map((fm) => (
+              <FailureModePreviewRow key={fm.id} item={fm} />
+            ))}
+          </View>
+        )}
+
+        {/* Documents */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-3">
+          <Text className="text-sm font-bold text-gray-900">Documents</Text>
+          <View className="flex-row flex-wrap gap-3">
+            {documents.map((url) => (
+              <View
+                key={url}
+                className="border border-gray-100 rounded-xl p-3 items-center gap-y-2"
+                style={{ width: '47%' }}
+              >
+                <Ionicons name="document-outline" size={28} color="#9CA3AF" />
+                <Text className="text-xs font-semibold text-gray-800 text-center" numberOfLines={1}>
+                  {formatFileNameFromUrl(url)}
+                </Text>
+                <Text className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">
+                  {fileExtension(url)}
+                </Text>
+                <View className="flex-row gap-x-2">
+                  <Pressable
+                    onPress={() => Linking.openURL(url)}
+                    hitSlop={6}
+                    className="active:opacity-60"
+                  >
+                    <Ionicons name="eye-outline" size={18} color="#208AEF" />
+                  </Pressable>
+                  {isAdmin && (
+                    <Pressable
+                      onPress={() => handleDeleteDocument(url)}
+                      disabled={isUpdatingDocuments}
+                      hitSlop={6}
+                      className="active:opacity-60"
+                    >
+                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            ))}
+
+            {isAdmin && (
+              <Pressable
+                onPress={() => setFileManagerOpen(true)}
+                disabled={isUpdatingDocuments}
+                className="border border-dashed border-gray-300 rounded-xl p-3 items-center justify-center gap-y-2 active:opacity-70"
+                style={{ width: '47%', minHeight: 96 }}
+              >
+                <Ionicons name="add-circle-outline" size={28} color="#9CA3AF" />
+                <Text className="text-xs font-semibold text-gray-500">Add Document</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {documents.length === 0 && !isAdmin && (
+            <Text className="text-sm text-gray-400 italic">No documents yet</Text>
+          )}
+        </View>
       </ScrollView>
+
+      <FileManagerSheet
+        visible={fileManagerOpen}
+        onClose={() => setFileManagerOpen(false)}
+        onSelect={handleAddDocument}
+        folder="equipment-documents"
+      />
+
+      {isDeleting && (
+        <View className="absolute inset-0 bg-black/20 items-center justify-center">
+          <ActivityIndicator color="#208AEF" size="large" />
+        </View>
+      )}
     </View>
   )
 }
