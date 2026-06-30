@@ -57,13 +57,15 @@ function BrowseTab({
 }) {
   const [page, setPage] = useState(1)
   const [allFiles, setAllFiles] = useState<BrowseFile[]>([])
-  const { data, isLoading, refetch } = useFiles(page)
+  const { data, isLoading, refetch, error } = useFiles(page)
 
   useEffect(() => {
     if (data?.data) {
-      setAllFiles((prev) =>
-        page === 1 ? data.data : [...prev, ...data.data],
-      )
+      setAllFiles((prev) => {
+        if (page === 1) return data.data
+        const existingKeys = new Set(prev.map((f) => f.key))
+        return [...prev, ...data.data.filter((f) => !existingKeys.has(f.key))]
+      })
     }
   }, [data, page])
 
@@ -71,10 +73,27 @@ function BrowseTab({
 
   const THUMB_SIZE = (Dimensions.get('window').width - 32 - 8) / 3
 
+  if (error && allFiles.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center px-6 gap-y-3">
+        <Ionicons name="cloud-offline-outline" size={40} color="#D1D5DB" />
+        <Text className="text-sm text-gray-400 text-center">
+          Could not load files. Check your connection and try again.
+        </Text>
+        <Pressable
+          onPress={() => refetch()}
+          className="px-4 py-2 bg-blue-600 rounded-xl active:opacity-70"
+        >
+          <Text className="text-sm font-semibold text-white">Retry</Text>
+        </Pressable>
+      </View>
+    )
+  }
+
   return (
     <FlatList
       data={allFiles}
-      keyExtractor={(item) => item.key}
+      keyExtractor={(item, index) => `${item.key ?? ''}-${index}`}
       numColumns={3}
       style={{ flex: 1 }}
       contentContainerStyle={{ padding: 16, gap: 4 }}
@@ -116,12 +135,21 @@ function BrowseTab({
           className="active:opacity-70"
           style={{ width: THUMB_SIZE }}
         >
-          <Image
-            source={{ uri: item.url }}
-            style={{ width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 8 }}
-            contentFit="cover"
-            transition={150}
-          />
+          <View
+            style={{
+              width: THUMB_SIZE,
+              height: THUMB_SIZE,
+              borderRadius: 8,
+              backgroundColor: '#F3F4F6',
+            }}
+          >
+            <Image
+              source={{ uri: item.url }}
+              style={{ width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 8 }}
+              contentFit="cover"
+              transition={150}
+            />
+          </View>
           <Text className="text-xs text-gray-500 mt-1" numberOfLines={1}>
             {item.originalName || item.name}
           </Text>
@@ -277,7 +305,7 @@ export function FileManagerSheet({
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <Pressable className="flex-1 bg-black/40 justify-end" onPress={onClose}>
         <Animated.View
-          style={[{ transform: [{ translateY: slideAnim }], maxHeight: SHEET_MAX_HEIGHT }]}
+          style={[{ transform: [{ translateY: slideAnim }], height: SHEET_MAX_HEIGHT }]}
           className="bg-white rounded-t-3xl"
           onStartShouldSetResponder={() => true}
         >

@@ -32,109 +32,10 @@ function StatusBadge({ status }: { status: 'draft' | 'published' }) {
         isPublished ? 'bg-green-100' : 'bg-amber-100'
       }`}
     >
-      <View
-        className={`w-2 h-2 rounded-full ${isPublished ? 'bg-green-500' : 'bg-amber-400'}`}
-      />
-      <Text
-        className={`text-xs font-semibold ${isPublished ? 'text-green-700' : 'text-amber-700'}`}
-      >
+      <View className={`w-2 h-2 rounded-full ${isPublished ? 'bg-green-500' : 'bg-amber-400'}`} />
+      <Text className={`text-xs font-semibold ${isPublished ? 'text-green-700' : 'text-amber-700'}`}>
         {isPublished ? 'Published' : 'Draft'}
       </Text>
-    </View>
-  )
-}
-
-function ProcedureCard({
-  procedure,
-  isAdmin,
-  jobAidId,
-}: {
-  procedure: Procedure
-  isAdmin: boolean
-  jobAidId: string
-}) {
-  const { mutate: deleteProcedure } = useDeleteProcedure()
-
-  function handleMenu() {
-    Alert.alert(`Step ${procedure.step}`, undefined, [
-      {
-        text: 'Edit Step',
-        onPress: () =>
-          router.push({
-            pathname: '/(app)/(job-aids)/procedure-form',
-            params: {
-              job_aid_id: jobAidId,
-              id: procedure.id,
-              step: String(procedure.step),
-              title: procedure.title,
-              instruction: procedure.instruction,
-              image: procedure.image ?? '',
-            },
-          }),
-      },
-      {
-        text: 'Delete Step',
-        style: 'destructive',
-        onPress: () =>
-          Alert.alert('Delete Step', 'Remove this step? This cannot be undone.', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Delete',
-              style: 'destructive',
-              onPress: () => deleteProcedure({ id: procedure.id, job_aid_id: jobAidId }),
-            },
-          ]),
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ])
-  }
-
-  return (
-    <View className="mb-4 border border-gray-100 rounded-2xl overflow-hidden bg-gray-50">
-      {procedure.image ? (
-        <Image
-          source={{ uri: procedure.image }}
-          style={{ width: '100%', aspectRatio: 16 / 9 }}
-          contentFit="cover"
-          transition={200}
-        />
-      ) : null}
-
-      <View className="p-4 gap-y-2">
-        <View className="flex-row items-start justify-between">
-          <View className="flex-row items-center gap-x-3 flex-1">
-            {/* Step badge */}
-            <View className="w-7 h-7 rounded-full bg-gray-700 items-center justify-center">
-              <Text className="text-xs font-bold text-white">{procedure.step}</Text>
-            </View>
-            <Text className="flex-1 text-sm font-semibold text-gray-900">
-              {procedure.title || `Step ${procedure.step}`}
-            </Text>
-          </View>
-          {isAdmin && (
-            <Pressable onPress={handleMenu} hitSlop={8} className="active:opacity-60 pl-2">
-              <Ionicons name="ellipsis-horizontal" size={18} color="#9CA3AF" />
-            </Pressable>
-          )}
-        </View>
-
-        <Text className="text-sm text-gray-700 leading-5">{procedure.instruction}</Text>
-
-        {/* Precautions */}
-        {procedure.precautions.length > 0 && (
-          <View className="bg-amber-50 border border-amber-200 rounded-xl p-3 gap-y-1">
-            <View className="flex-row items-center gap-x-1.5 mb-1">
-              <Ionicons name="warning-outline" size={14} color="#B45309" />
-              <Text className="text-xs font-semibold text-amber-700">Precautions</Text>
-            </View>
-            {procedure.precautions.map((p, i) => (
-              <Text key={p.id || i} className="text-xs text-amber-800">
-                • {p.instruction}
-              </Text>
-            ))}
-          </View>
-        )}
-      </View>
     </View>
   )
 }
@@ -151,6 +52,7 @@ export default function JobAidDetailScreen() {
   const { mutate: deleteJobAid, isPending: isDeleting } = useDeleteJobAid()
   const { mutate: publishJobAid } = usePublishJobAid()
   const { mutate: unpublishJobAid } = useUnpublishJobAid()
+  const { mutate: deleteProcedure } = useDeleteProcedure()
 
   const jobAid = data?.data
 
@@ -186,9 +88,7 @@ export default function JobAidDetailScreen() {
                 text: 'Delete',
                 style: 'destructive',
                 onPress: () =>
-                  deleteJobAid(jobAid.id, {
-                    onSuccess: () => router.back(),
-                  }),
+                  deleteJobAid(jobAid.id, { onSuccess: () => router.back() }),
               },
             ],
           ),
@@ -201,6 +101,40 @@ export default function JobAidDetailScreen() {
     if (!jobAid) return
     Clipboard.setString(`/job-aids/${jobAid.slug}`)
     Alert.alert('Link copied', 'The job aid link has been copied to clipboard.')
+  }
+
+  function handleProcedureMenu(procedure: Procedure) {
+    Alert.alert(`Step ${procedure.step}`, undefined, [
+      {
+        text: 'Edit Step',
+        onPress: () =>
+          router.push({
+            pathname: '/(app)/(job-aids)/procedure-form',
+            params: {
+              job_aid_id: id,
+              id: procedure.id,
+              step: String(procedure.step),
+              title: procedure.title,
+              instruction: procedure.instruction,
+              image: procedure.image ?? '',
+            },
+          }),
+      },
+      {
+        text: 'Delete Step',
+        style: 'destructive',
+        onPress: () =>
+          Alert.alert('Delete Step', 'Remove this step? This cannot be undone.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete',
+              style: 'destructive',
+              onPress: () => deleteProcedure({ id: procedure.id, job_aid_id: id }),
+            },
+          ]),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ])
   }
 
   if (isLoading) {
@@ -225,9 +159,8 @@ export default function JobAidDetailScreen() {
     )
   }
 
-  const sortedProcedures = [...(jobAid.procedures ?? [])].sort(
-    (a, b) => a.step - b.step,
-  )
+  const sortedProcedures = [...(jobAid.procedures ?? [])].sort((a, b) => a.step - b.step)
+  const previewSteps = sortedProcedures.slice(0, 3)
   const instructionLong = (jobAid.instruction ?? '').length > 200
   const displayInstruction =
     !expanded && instructionLong
@@ -322,9 +255,9 @@ export default function JobAidDetailScreen() {
           )}
         </View>
 
-        {/* Procedures */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-3">
-          <View className="flex-row items-center justify-between">
+        {/* Procedures preview */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
+          <View className="flex-row items-center justify-between mb-2">
             <Text className="text-sm font-bold text-gray-900">Step-by-Step Procedures</Text>
             {isAdmin && (
               <Pressable
@@ -347,31 +280,56 @@ export default function JobAidDetailScreen() {
           {sortedProcedures.length === 0 ? (
             <Text className="text-sm text-gray-400 italic">No steps yet</Text>
           ) : (
-            sortedProcedures.map((procedure) => (
-              <ProcedureCard
-                key={procedure.id}
-                procedure={procedure}
-                isAdmin={isAdmin}
-                jobAidId={jobAid.id}
-              />
-            ))
-          )}
+            <>
+              {previewSteps.map((procedure, index) => (
+                <Pressable
+                  key={procedure.id}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(app)/(job-aids)/step-view',
+                      params: { id: jobAid.id, step_index: String(index) },
+                    })
+                  }
+                  className="flex-row items-center gap-x-3 py-2.5 border-b border-gray-50 active:opacity-70"
+                >
+                  <View className="w-6 h-6 rounded-full bg-gray-700 items-center justify-center flex-shrink-0">
+                    <Text className="text-xs font-bold text-white">{procedure.step}</Text>
+                  </View>
+                  <View className="flex-1 gap-y-0.5 min-w-0">
+                    <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
+                      {procedure.title || `Step ${procedure.step}`}
+                    </Text>
+                    <Text className="text-xs text-gray-500" numberOfLines={1}>
+                      {procedure.instruction}
+                    </Text>
+                  </View>
+                  {isAdmin && (
+                    <Pressable
+                      onPress={() => handleProcedureMenu(procedure)}
+                      hitSlop={8}
+                      className="active:opacity-60 px-1"
+                    >
+                      <Ionicons name="ellipsis-horizontal" size={16} color="#9CA3AF" />
+                    </Pressable>
+                  )}
+                  <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+                </Pressable>
+              ))}
 
-          {isAdmin && sortedProcedures.length > 0 && (
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: '/(app)/(job-aids)/procedure-form',
-                  params: {
-                    job_aid_id: jobAid.id,
-                    step: String(sortedProcedures.length + 1),
-                  },
-                })
-              }
-              className="border border-dashed border-blue-300 rounded-xl py-3 items-center active:opacity-70"
-            >
-              <Text className="text-sm font-semibold text-blue-600">+ Add Another Step</Text>
-            </Pressable>
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: '/(app)/(job-aids)/steps',
+                    params: { id: jobAid.id, title: jobAid.title },
+                  })
+                }
+                className="py-3 items-center active:opacity-70"
+              >
+                <Text className="text-sm font-semibold text-blue-600">
+                  View All {sortedProcedures.length} Steps →
+                </Text>
+              </Pressable>
+            </>
           )}
         </View>
 
