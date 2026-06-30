@@ -706,6 +706,25 @@ export default function EquipmentDetailScreen() {
         equipmentName={equipment?.name}
       />
 
+      {!!equipment && (
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: '/(app)/(equipment)/chat',
+              params: {
+                equipment_id: equipment.id,
+                equipment_name: equipment.name,
+                location_name: equipment.location?.name ?? '',
+              },
+            })
+          }
+          style={{ bottom: insets.bottom + 20 }}
+          className="absolute right-5 w-14 h-14 rounded-full bg-[#208AEF] items-center justify-center shadow-lg active:opacity-80"
+        >
+          <Ionicons name="chatbubble-ellipses" size={24} color="#FFFFFF" />
+        </Pressable>
+      )}
+
       {isDeleting && (
         <View className="absolute inset-0 bg-black/20 items-center justify-center">
           <ActivityIndicator color="#208AEF" size="large" />
