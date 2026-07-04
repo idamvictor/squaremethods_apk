@@ -101,11 +101,12 @@ export default function TasksScreen() {
     }
   }, [data, page])
 
+  const rawItems = page === 1 ? (data?.data ?? allItems) : allItems
   const displayItems = jobAidFilter === 'all'
-    ? allItems
+    ? rawItems
     : jobAidFilter === 'with'
-      ? allItems.filter((t) => t.jobAids.length > 0)
-      : allItems.filter((t) => t.jobAids.length === 0)
+      ? rawItems.filter((t) => t.jobAids.length > 0)
+      : rawItems.filter((t) => t.jobAids.length === 0)
 
   const totalPages = data?.pagination?.pages ?? 1
   const hasMore = page < totalPages

@@ -265,7 +265,7 @@ export default function JobsScreen() {
         </View>
       ) : (
         <FlatList
-          data={allJobs}
+          data={page === 1 ? (query.data?.data ?? allJobs) : allJobs}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: insets.bottom + 24 }}
           onRefresh={handleRefresh}

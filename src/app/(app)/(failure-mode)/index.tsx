@@ -256,7 +256,7 @@ export default function FailureModeScreen() {
         </View>
       ) : (
         <FlatList
-          data={allItems}
+          data={page === 1 ? (data?.data ?? allItems) : allItems}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: insets.bottom + 24 }}
           onRefresh={handleRefresh}

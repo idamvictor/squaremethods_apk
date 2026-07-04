@@ -337,7 +337,7 @@ export default function JobAidsScreen() {
 
       {/* List */}
       <FlatList
-        data={allItems}
+        data={page === 1 ? (data?.data ?? allItems) : allItems}
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
         contentContainerStyle={{
