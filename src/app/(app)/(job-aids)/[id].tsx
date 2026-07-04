@@ -170,6 +170,7 @@ export default function JobAidDetailScreen() {
               title: procedure.title,
               instruction: procedure.instruction,
               image: procedure.image ?? '',
+              precautions: JSON.stringify(procedure.precautions),
             },
           }),
       },
@@ -368,6 +369,12 @@ export default function JobAidDetailScreen() {
                       {procedure.instruction}
                     </Text>
                   </View>
+                  {procedure.precautions.length > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A', borderRadius: 6 }}>
+                      <Ionicons name="warning-outline" size={11} color="#B45309" />
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#B45309' }}>{procedure.precautions.length}</Text>
+                    </View>
+                  )}
                   {isAdmin && (
                     <Pressable
                       onPress={() => handleProcedureMenu(procedure)}

@@ -43,6 +43,7 @@ function StepCard({
               title: procedure.title,
               instruction: procedure.instruction,
               image: procedure.image ?? '',
+              precautions: JSON.stringify(procedure.precautions),
             },
           }),
       },
@@ -104,6 +105,12 @@ function StepCard({
             <Text className="flex-1 text-sm font-bold text-gray-900" numberOfLines={1}>
               {procedure.title || `Step ${procedure.step}`}
             </Text>
+            {procedure.precautions.length > 0 && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A', borderRadius: 6 }}>
+                <Ionicons name="warning-outline" size={11} color="#B45309" />
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#B45309' }}>{procedure.precautions.length}</Text>
+              </View>
+            )}
             {isAdmin && (
               <Pressable onPress={handleMenu} hitSlop={8} className="active:opacity-60">
                 <Ionicons name="ellipsis-horizontal" size={18} color="#9CA3AF" />

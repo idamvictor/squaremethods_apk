@@ -79,6 +79,7 @@ export default function StepViewScreen() {
                   title: procedure.title,
                   instruction: procedure.instruction,
                   image: procedure.image ?? '',
+                  precautions: JSON.stringify(procedure.precautions),
                 },
               })
             }
@@ -142,11 +143,24 @@ export default function StepViewScreen() {
                 <Ionicons name="warning-outline" size={16} color="#B45309" />
                 <Text className="text-sm font-semibold text-amber-700">Precautions</Text>
               </View>
-              {procedure.precautions.map((p, i) => (
-                <Text key={p.id || i} className="text-sm text-amber-800 leading-5">
-                  • {p.instruction}
-                </Text>
-              ))}
+              {procedure.precautions.map((p, i) => {
+                let text: string
+                if (typeof (p as any) === 'string') {
+                  try {
+                    const parsed = JSON.parse(p as any)
+                    text = parsed.instruction ?? (p as any)
+                  } catch {
+                    text = p as any
+                  }
+                } else {
+                  text = (p as any).instruction ?? ''
+                }
+                return (
+                  <Text key={(p as any).id ?? i} className="text-sm text-amber-800 leading-5">
+                    • {text}
+                  </Text>
+                )
+              })}
             </View>
           )}
         </View>
