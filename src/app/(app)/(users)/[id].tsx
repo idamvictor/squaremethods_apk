@@ -130,7 +130,6 @@ export default function UserDetailScreen() {
   if (error || !userData) {
     return (
       <View className="flex-1 bg-gray-50">
-        <View style={{ height: insets.top }} className="bg-black" />
         <View className="flex-1 items-center justify-center gap-y-3">
           <Text className="text-sm text-gray-400">Failed to load user</Text>
           <Pressable
@@ -150,9 +149,7 @@ export default function UserDetailScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <View style={{ height: insets.top }} className="bg-black" />
-
-      <View className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center gap-x-3">
+      <View style={{ paddingTop: insets.top }} className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center gap-x-3">
         <Pressable
           onPress={() => router.back()}
           hitSlop={8}

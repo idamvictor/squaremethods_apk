@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -140,6 +141,25 @@ export default function FailureModeDetailScreen() {
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + (showActionBar ? 88 : 24) }}
       >
+        {/* Hero image card */}
+        <View
+          className="w-full bg-gray-200 rounded-2xl overflow-hidden"
+          style={{ aspectRatio: 16 / 9 }}
+        >
+          {fm.image ? (
+            <Image
+              source={{ uri: fm.image }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center">
+              <Ionicons name="warning-outline" size={48} color="#9CA3AF" />
+            </View>
+          )}
+        </View>
+
         {/* Status + Priority badges */}
         <View className="flex-row gap-x-2 flex-wrap">
           <View className={`px-3 py-1 rounded-full ${statusStyle.bg}`}>

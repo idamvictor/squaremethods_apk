@@ -9,11 +9,13 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { useFailureModeById, useUpdateFailureMode } from '@/services/failure-mode/failure-mode-queries'
+import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
 import type { FailureModeStatus, FailureModePriority } from '@/services/failure-mode/failure-mode-types'
 
 const STATUSES: { label: string; value: FailureModeStatus; color: string }[] = [
@@ -43,6 +45,8 @@ export default function EditFailureModeScreen() {
   const { data: fm, isLoading: fmLoading } = useFailureModeById(id)
   const { mutate: updateFm, isPending, error: apiError } = useUpdateFailureMode()
 
+  const [image, setImage] = useState('')
+  const [showImagePicker, setShowImagePicker] = useState(false)
   const [title, setTitle] = useState('')
   const [status, setStatus] = useState<FailureModeStatus>('open')
   const [priority, setPriority] = useState<FailureModePriority>('medium')
@@ -60,6 +64,7 @@ export default function EditFailureModeScreen() {
       setPriority(fm.priority ?? 'medium')
       setResolutions(fm.resolutions ?? [])
       if (fm.due_date) setDueDate(new Date(fm.due_date))
+      setImage(fm.image ?? '')
       setInitialized(true)
     }
   }, [fm, initialized])
@@ -92,6 +97,7 @@ export default function EditFailureModeScreen() {
         priority,
         resolutions,
         due_date: dueDate ? toISODate(dueDate) : null,
+        image: image || null,
       },
       { onSuccess: () => router.back() },
     )
@@ -149,6 +155,35 @@ export default function EditFailureModeScreen() {
             <Text className="text-sm font-medium text-gray-700">{fm.equipment.name}</Text>
           </View>
         )}
+
+        {/* Image */}
+        <View>
+          <Text className="text-sm font-medium text-gray-700 mb-1">Image (optional)</Text>
+          <Pressable
+            onPress={() => setShowImagePicker(true)}
+            className="rounded-xl overflow-hidden border border-dashed border-gray-300 bg-white active:opacity-70"
+            style={{ aspectRatio: 16 / 9 }}
+          >
+            {image ? (
+              <>
+                <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                <View className="absolute top-2 right-2 bg-black/50 rounded-lg px-2 py-1">
+                  <Text className="text-xs text-white font-medium">Change</Text>
+                </View>
+              </>
+            ) : (
+              <View className="flex-1 items-center justify-center gap-y-2">
+                <Ionicons name="image-outline" size={32} color="#9CA3AF" />
+                <Text className="text-sm text-gray-400">Tap to add image</Text>
+              </View>
+            )}
+          </Pressable>
+          {image ? (
+            <Pressable onPress={() => setImage('')} className="mt-1 active:opacity-60">
+              <Text className="text-xs text-red-500">Remove image</Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         {/* Title */}
         <View>
@@ -278,6 +313,11 @@ export default function EditFailureModeScreen() {
           )}
         </View>
       </ScrollView>
+      <FileManagerSheet
+        visible={showImagePicker}
+        onClose={() => setShowImagePicker(false)}
+        onSelect={(url) => { setImage(url); setShowImagePicker(false) }}
+      />
     </KeyboardAvoidingView>
   )
 }

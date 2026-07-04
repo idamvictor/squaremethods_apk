@@ -19,7 +19,7 @@ export default function MoreScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <View style={{ height: insets.top }} className="bg-black" />
+      <View style={{ height: insets.top }} className="bg-gray-50" />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24, gap: 24 }}>
         {/* User info */}
         <View className="bg-white rounded-2xl p-4 gap-y-1">

@@ -45,6 +45,7 @@ export interface CreateFailureModeInput {
   priority: FailureModePriority
   resolutions: string[]
   due_date?: string | null
+  image?: string
 }
 
 export interface UpdateFailureModeInput {
@@ -55,4 +56,5 @@ export interface UpdateFailureModeInput {
   resolutions?: string[]
   due_date?: string | null
   equipment_id?: string
+  image?: string | null
 }

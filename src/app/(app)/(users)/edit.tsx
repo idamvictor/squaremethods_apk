@@ -82,9 +82,7 @@ export default function EditUserScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-gray-50"
     >
-      <View style={{ height: insets.top }} className="bg-black" />
-
-      <View className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center justify-between">
+      <View style={{ paddingTop: insets.top }} className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-x-3">
           <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
             <Ionicons name="chevron-back" size={24} color="#111827" />
