@@ -14,7 +14,6 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
 import {
   useTeamById,
-  useTeamStats,
   useAddTeamMember,
   useRemoveTeamMember,
   useDeleteTeam,
@@ -36,15 +35,6 @@ const ROLE_STYLE: Record<string, { bg: string; text: string }> = {
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase()
-}
-
-function StatTile({ label, value, accent }: { label: string; value: number | undefined; accent?: string }) {
-  return (
-    <View className="flex-1 bg-white rounded-2xl p-3 items-center gap-y-1">
-      <Text className={`text-xl font-bold ${accent ?? 'text-gray-900'}`}>{value ?? '—'}</Text>
-      <Text className="text-xs text-gray-400 text-center">{label}</Text>
-    </View>
-  )
 }
 
 function MemberRow({
@@ -94,7 +84,6 @@ export default function TeamDetailScreen() {
   const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
 
   const { data: team, isLoading, error } = useTeamById(id)
-  const { data: stats } = useTeamStats(id)
   const { mutate: addMember, isPending: isAdding } = useAddTeamMember()
   const { mutate: removeMember } = useRemoveTeamMember()
   const { mutate: deleteTeam, isPending: isDeleting } = useDeleteTeam()
@@ -187,14 +176,6 @@ export default function TeamDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 24 }}>
-        {/* Stats row */}
-        <View className="flex-row gap-x-3">
-          <StatTile label="Members" value={stats?.memberCount ?? members.length} />
-          <StatTile label="Active Jobs" value={stats?.activeJobs} accent="text-blue-600" />
-          <StatTile label="Completed" value={stats?.completedJobs} accent="text-green-600" />
-          <StatTile label="Overdue" value={stats?.overdueJobs} accent="text-red-500" />
-        </View>
-
         {/* Description */}
         {!!team.description && (
           <View className="bg-white rounded-2xl p-4 gap-y-1">

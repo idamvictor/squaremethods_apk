@@ -115,47 +115,28 @@ export default function UsersScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <View style={{ paddingTop: insets.top }} className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center justify-between">
-        <View className="flex-row items-center gap-x-3">
-          <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
-            <Ionicons name="chevron-back" size={24} color="#111827" />
-          </Pressable>
-          <Text className="text-lg font-bold text-gray-900">Users</Text>
-        </View>
-        {isAdmin && (
-          <Pressable
-            onPress={() => router.push('/(app)/(users)/invite')}
-            hitSlop={8}
-            className="w-9 h-9 rounded-full bg-blue-600 items-center justify-center active:opacity-70"
-          >
-            <Ionicons name="person-add-outline" size={18} color="#fff" />
-          </Pressable>
-        )}
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
-      >
-        {ROLE_FILTERS.map((f) => {
-          const active = roleFilter === f
-          return (
-            <Pressable
-              key={f}
-              onPress={() => setRoleFilter(f)}
-              className={`rounded-full px-4 py-1.5 ${active ? 'bg-blue-600' : 'bg-white border border-gray-200'}`}
-            >
-              <Text className={`text-xs font-medium capitalize ${active ? 'text-white' : 'text-gray-600'}`}>
-                {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
-              </Text>
+      <View style={{ paddingTop: insets.top }} className="bg-white border-b border-gray-100 px-4 pb-3">
+        {/* Title + invite button */}
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center gap-x-3">
+            <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+              <Ionicons name="chevron-back" size={24} color="#111827" />
             </Pressable>
-          )
-        })}
-      </ScrollView>
+            <Text className="text-lg font-bold text-gray-900">Users</Text>
+          </View>
+          {isAdmin && (
+            <Pressable
+              onPress={() => router.push('/(app)/(users)/invite')}
+              hitSlop={8}
+              className="w-9 h-9 rounded-full bg-blue-600 items-center justify-center active:opacity-70"
+            >
+              <Ionicons name="person-add-outline" size={18} color="#fff" />
+            </Pressable>
+          )}
+        </View>
 
-      <View className="px-4 pb-3">
-        <View className="flex-row items-center bg-gray-100 rounded-xl h-9 px-3 gap-x-2">
+        {/* Search */}
+        <View className="flex-row items-center bg-gray-100 rounded-xl h-9 px-3 gap-x-2 mb-2">
           <Ionicons name="search-outline" size={16} color="#9CA3AF" />
           <TextInput
             value={search}
@@ -171,6 +152,28 @@ export default function UsersScreen() {
             </Pressable>
           )}
         </View>
+
+        {/* Filter chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8 }}
+        >
+          {ROLE_FILTERS.map((f) => {
+            const active = roleFilter === f
+            return (
+              <Pressable
+                key={f}
+                onPress={() => setRoleFilter(f)}
+                className={`rounded-full px-4 py-1.5 ${active ? 'bg-blue-600' : 'bg-white border border-gray-200'}`}
+              >
+                <Text className={`text-xs font-medium capitalize ${active ? 'text-white' : 'text-gray-600'}`}>
+                  {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </ScrollView>
       </View>
 
       <FlatList

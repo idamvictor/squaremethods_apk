@@ -76,8 +76,14 @@ export default function UsersScreen() {
 
   useEffect(() => {
     if (!data?.data) return
-    if (page === 1) setItems(data.data)
-    else setItems((prev) => [...prev, ...data.data])
+    if (page === 1) {
+      setItems(data.data)
+    } else {
+      setItems((prev) => {
+        const seen = new Set(prev.map((i) => i.id))
+        return [...prev, ...data.data.filter((i) => !seen.has(i.id))]
+      })
+    }
   }, [data, page])
 
   function handleEndReached() {

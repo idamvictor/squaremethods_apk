@@ -8,23 +8,104 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
-import { useTeams, useDeleteTeam } from '@/services/teams/teams-queries'
+import { useTeams, useDeleteTeam, useTeamMembers } from '@/services/teams/teams-queries'
 import type { Team } from '@/services/teams/teams-types'
 import type { UserRole } from '@/types/auth'
 
 const ADMIN_ROLES: UserRole[] = ['superadmin', 'owner', 'admin', 'user', 'viewer']
 
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+function TeamAvatarStack({ teamId }: { teamId: string }) {
+  const { data, isLoading } = useTeamMembers(teamId)
+  const members = data?.data ?? []
+
+  if (isLoading) {
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {[0, 1].map((i) => (
+          <View
+            key={i}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              backgroundColor: '#E5E7EB',
+              marginLeft: i === 0 ? 0 : -10,
+              borderWidth: 2,
+              borderColor: '#FFFFFF',
+            }}
+          />
+        ))}
+      </View>
+    )
+  }
+
+  const visible = members.slice(0, 4)
+  const overflow = members.length - visible.length
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      {members.length > 0 ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {visible.map((m, i) => (
+            <View
+              key={m.id}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                overflow: 'hidden',
+                marginLeft: i === 0 ? 0 : -10,
+                borderWidth: 2,
+                borderColor: '#FFFFFF',
+                backgroundColor: '#E5E7EB',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {m.avatar_url ? (
+                <Image
+                  source={{ uri: m.avatar_url }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+              ) : (
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#4B5563' }}>
+                  {`${m.first_name[0] ?? ''}${m.last_name[0] ?? ''}`.toUpperCase()}
+                </Text>
+              )}
+            </View>
+          ))}
+          {overflow > 0 && (
+            <View
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                marginLeft: -10,
+                borderWidth: 2,
+                borderColor: '#FFFFFF',
+                backgroundColor: '#DBEAFE',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 9, fontWeight: '700', color: '#1D4ED8' }}>
+                +{overflow}
+              </Text>
+            </View>
+          )}
+        </View>
+      ) : null}
+      <Text style={{ fontSize: 12, color: '#9CA3AF' }}>
+        {members.length} member{members.length !== 1 ? 's' : ''}
+      </Text>
+    </View>
+  )
 }
 
 function TeamCard({
@@ -32,7 +113,7 @@ function TeamCard({
   onPress,
   onLongPress,
 }: {
-  team: Team & { memberCount?: number }
+  team: Team
   onPress: () => void
   onLongPress: () => void
 }) {
@@ -42,22 +123,25 @@ function TeamCard({
       onLongPress={onLongPress}
       className="bg-white rounded-2xl p-4 shadow-sm active:opacity-80"
     >
-      <View className="flex-row items-center gap-x-3">
-        <View className="w-11 h-11 rounded-xl bg-blue-100 items-center justify-center">
-          <Text className="text-sm font-bold text-blue-600">{getInitials(team.name)}</Text>
-        </View>
-        <View className="flex-1 gap-y-0.5">
-          <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
-            {team.name}
-          </Text>
-          {!!team.description && (
-            <Text className="text-xs text-gray-400" numberOfLines={2}>
-              {team.description}
-            </Text>
-          )}
-        </View>
+      {/* Name + chevron */}
+      <View className="flex-row items-center justify-between mb-1">
+        <Text className="flex-1 text-sm font-bold text-gray-900 mr-2" numberOfLines={1}>
+          {team.name}
+        </Text>
         <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
       </View>
+
+      {/* Description */}
+      {!!team.description ? (
+        <Text className="text-xs text-gray-400 mb-3" numberOfLines={1}>
+          {team.description}
+        </Text>
+      ) : (
+        <View className="mb-2" />
+      )}
+
+      {/* Stacked avatars + member count */}
+      <TeamAvatarStack teamId={team.id} />
     </Pressable>
   )
 }
