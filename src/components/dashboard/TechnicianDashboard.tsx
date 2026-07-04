@@ -1,7 +1,8 @@
 import * as React from 'react'
-import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { MetricCard } from './MetricCard'
 import { JobCard } from '@/components/jobs/JobCard'
 import { useDashboard, useProfile } from '@/services/users/users-queries'
@@ -74,6 +75,21 @@ export function TechnicianDashboard() {
           <Text className="text-xs text-red-400">Pull down to retry</Text>
         </View>
       )}
+
+      {/* Scan QR card */}
+      <Pressable
+        onPress={() => router.push('/(app)/scan')}
+        className="bg-blue-600 rounded-2xl p-4 flex-row items-center gap-x-3 active:opacity-80"
+      >
+        <View className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center">
+          <Ionicons name="qr-code-outline" size={22} color="#FFFFFF" />
+        </View>
+        <View className="flex-1">
+          <Text className="text-base font-bold text-white">Scan Equipment</Text>
+          <Text className="text-xs text-blue-100">Point your camera at a QR code</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
+      </Pressable>
 
       {/* Metric cards — 2×2 grid */}
       <View className="gap-y-3">

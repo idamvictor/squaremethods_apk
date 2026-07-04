@@ -93,6 +93,13 @@ export function useRegenerateEquipmentQRCode() {
   })
 }
 
+export function useEquipmentByScan() {
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiClient.get<GetEquipmentResponse>(`/equipment/scan?code=${encodeURIComponent(code)}`).then((r) => r.data),
+  })
+}
+
 export function useDeleteEquipment() {
   const qc = useQueryClient()
   return useMutation({
