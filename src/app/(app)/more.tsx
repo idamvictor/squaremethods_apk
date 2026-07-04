@@ -12,10 +12,16 @@ const NAV_ITEMS = [
   { label: 'Settings', icon: '⚙️', href: '/(app)/(settings)' as const },
 ]
 
+const TECHNICIAN_HIDDEN: string[] = ['/(app)/(tasks)', '/(app)/(users)']
+
 export default function MoreScreen() {
   const insets = useSafeAreaInsets()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
+  const isTechnician = user?.role === 'technician'
+  const visibleItems = isTechnician
+    ? NAV_ITEMS.filter((item) => !TECHNICIAN_HIDDEN.includes(item.href))
+    : NAV_ITEMS
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -32,7 +38,7 @@ export default function MoreScreen() {
 
         {/* Navigation items */}
         <View className="bg-white rounded-2xl overflow-hidden">
-          {NAV_ITEMS.map((item, index) => (
+          {visibleItems.map((item, index) => (
             <View key={item.label}>
               <Pressable
                 onPress={() => item.href ? router.push(item.href) : undefined}
@@ -42,7 +48,7 @@ export default function MoreScreen() {
                 <Text className="flex-1 text-sm font-medium text-gray-700">{item.label}</Text>
                 <Text className="text-gray-300">›</Text>
               </Pressable>
-              {index < NAV_ITEMS.length - 1 && (
+              {index < visibleItems.length - 1 && (
                 <View className="h-px bg-gray-100 ml-12" />
               )}
             </View>

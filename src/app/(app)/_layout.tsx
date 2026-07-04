@@ -4,6 +4,8 @@ import { useAuthStore } from '@/store/auth-store'
 
 export default function AppLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const user = useAuthStore((s) => s.user)
+  const isTechnician = user?.role === 'technician'
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />
@@ -51,6 +53,7 @@ export default function AppLayout() {
         name="(teams)"
         options={{
           title: 'Teams',
+          href: isTechnician ? null : undefined,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people-outline" size={size} color={color} />
           ),
