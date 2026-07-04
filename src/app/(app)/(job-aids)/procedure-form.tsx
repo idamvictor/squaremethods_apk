@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,9 +12,10 @@ import {
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useCreateProcedure, useUpdateProcedure } from '@/services/job-aids/job-aids-queries'
 import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
+import { useAnnotationStore } from '@/store/annotation-store'
 
 type PrecautionItem = { id?: string; instruction: string }
 
@@ -58,6 +59,16 @@ export default function ProcedureFormScreen() {
   const apiError = createError ?? updateError
   const apiErrorMsg =
     (apiError as any)?.response?.data?.message ?? (apiError as any)?.message ?? null
+
+  useFocusEffect(
+    useCallback(() => {
+      const pending = useAnnotationStore.getState().pendingAnnotatedImage
+      if (pending) {
+        setImage(pending)
+        useAnnotationStore.getState().setPendingAnnotatedImage(null)
+      }
+    }, []),
+  )
 
   function validate() {
     const e: Record<string, string> = {}
@@ -180,9 +191,23 @@ export default function ProcedureFormScreen() {
             )}
           </Pressable>
           {image ? (
-            <Pressable onPress={() => setImage('')} className="mt-1 active:opacity-60">
-              <Text className="text-xs text-red-500">Remove image</Text>
-            </Pressable>
+            <View className="flex-row items-center gap-x-4 mt-1">
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: '/(app)/(job-aids)/annotate',
+                    params: { imageUrl: image },
+                  })
+                }
+                className="flex-row items-center gap-x-1 active:opacity-60"
+              >
+                <Ionicons name="pencil-outline" size={13} color="#3B82F6" />
+                <Text className="text-xs text-blue-500 font-medium">Annotate</Text>
+              </Pressable>
+              <Pressable onPress={() => setImage('')} className="active:opacity-60">
+                <Text className="text-xs text-red-500">Remove image</Text>
+              </Pressable>
+            </View>
           ) : null}
         </View>
 
