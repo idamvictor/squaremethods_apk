@@ -172,7 +172,6 @@ export default function JobsScreen() {
 
   const handleRefresh = useCallback(() => {
     setPage(1)
-    setAllJobs([])
     query.refetch()
   }, [query])
 

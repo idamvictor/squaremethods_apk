@@ -116,7 +116,6 @@ export default function TasksScreen() {
 
   const handleRefresh = useCallback(() => {
     setPage(1)
-    setAllItems([])
     refetch()
   }, [refetch])
 
@@ -233,10 +232,12 @@ export default function TasksScreen() {
             ) : null
           }
           ListEmptyComponent={
-            <View className="flex-1 items-center justify-center py-24">
-              <Ionicons name="checkbox-outline" size={40} color="#D1D5DB" />
-              <Text className="mt-3 text-sm text-gray-400">No tasks found</Text>
-            </View>
+            !isFetching ? (
+              <View className="flex-1 items-center justify-center py-24">
+                <Ionicons name="checkbox-outline" size={40} color="#D1D5DB" />
+                <Text className="mt-3 text-sm text-gray-400">No tasks found</Text>
+              </View>
+            ) : null
           }
         />
       )}

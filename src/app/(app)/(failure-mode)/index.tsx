@@ -163,7 +163,6 @@ export default function FailureModeScreen() {
 
   const handleRefresh = useCallback(() => {
     setPage(1)
-    setAllItems([])
     refetch()
   }, [refetch])
 

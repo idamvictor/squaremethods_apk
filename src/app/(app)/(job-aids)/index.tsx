@@ -347,23 +347,22 @@ export default function JobAidsScreen() {
         }}
         onRefresh={() => {
           setPage(1)
-          setAllItems([])
           refetch()
         }}
-        refreshing={isLoading && page === 1}
+        refreshing={isFetching && page === 1}
         onEndReached={() => {
           if (hasMore && !isFetching) setPage((p) => p + 1)
         }}
         onEndReachedThreshold={0.4}
         ListEmptyComponent={
-          !isLoading ? (
+          isFetching ? (
+            <View className="flex-1 items-center justify-center py-24">
+              <ActivityIndicator color="#208AEF" />
+            </View>
+          ) : (
             <View className="flex-1 items-center justify-center gap-y-3 py-24">
               <Ionicons name="clipboard-outline" size={48} color="#D1D5DB" />
               <Text className="text-sm text-gray-400">No job aids found</Text>
-            </View>
-          ) : (
-            <View className="flex-1 items-center justify-center py-24">
-              <ActivityIndicator color="#208AEF" />
             </View>
           )
         }
