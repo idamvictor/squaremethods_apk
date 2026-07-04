@@ -107,7 +107,7 @@ export function TechnicianDashboard() {
             label="Job Aids"
             color="bg-purple-50"
             loading={dashLoading}
-            onPress={() => router.push('/(app)/(job-aids)')}
+            onPress={() => router.navigate('/(app)/(job-aids)')}
           />
         </View>
       </View>

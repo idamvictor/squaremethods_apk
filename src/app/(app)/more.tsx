@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '@/store/auth-store'
 
 const NAV_ITEMS = [
-  { label: 'Job Aids', icon: '📋', href: '/(app)/(job-aids)' as const },
+  { label: 'Jobs', icon: '💼', href: '/(app)/(jobs)' as const },
   { label: 'Tasks', icon: '✅', href: '/(app)/(tasks)' as const },
   { label: 'Users', icon: '👥', href: '/(app)/(users)' as const },
   { label: 'Failure Mode', icon: '⚠️', href: '/(app)/(failure-mode)' as const },

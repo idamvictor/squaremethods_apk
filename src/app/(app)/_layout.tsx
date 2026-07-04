@@ -39,11 +39,11 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="(jobs)"
+        name="(job-aids)"
         options={{
-          title: 'Jobs',
+          title: 'Job Aids',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="briefcase-outline" size={size} color={color} />
+            <Ionicons name="document-text-outline" size={size} color={color} />
           ),
         }}
       />
@@ -74,7 +74,7 @@ export default function AppLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="(job-aids)" options={{ href: null }} />
+      <Tabs.Screen name="(jobs)" options={{ href: null }} />
       <Tabs.Screen name="(settings)" options={{ href: null }} />
       <Tabs.Screen name="(failure-mode)" options={{ href: null }} />
       <Tabs.Screen name="(tasks)" options={{ href: null }} />

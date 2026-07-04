@@ -64,7 +64,7 @@ export function AdminDashboard() {
             label="Job Aids Created"
             color="bg-blue-50"
             loading={isLoading}
-            onPress={() => router.push('/(app)/(job-aids)')}
+            onPress={() => router.navigate('/(app)/(job-aids)')}
           />
           <MetricCard
             value={stats?.total_equipment}
