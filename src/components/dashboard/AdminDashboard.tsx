@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { router } from 'expo-router'
 import { MetricCard } from './MetricCard'
 import { TrendChart } from './TrendChart'
 import { useDashboard, useProfile } from '@/services/users/users-queries'
@@ -63,12 +64,14 @@ export function AdminDashboard() {
             label="Job Aids Created"
             color="bg-blue-50"
             loading={isLoading}
+            onPress={() => router.push('/(app)/(job-aids)')}
           />
           <MetricCard
             value={stats?.total_equipment}
             label="Total Equipment"
             color="bg-purple-50"
             loading={isLoading}
+            onPress={() => router.navigate('/(app)/(equipment)')}
           />
         </View>
         <View className="flex-row gap-x-3">
@@ -77,12 +80,14 @@ export function AdminDashboard() {
             label="Total Tasks"
             color="bg-orange-50"
             loading={isLoading}
+            onPress={() => router.push('/(app)/(tasks)')}
           />
           <MetricCard
             value={stats?.completed_tasks}
             label="Completed Tasks"
             color="bg-green-50"
             loading={isLoading}
+            onPress={() => router.push('/(app)/(tasks)')}
           />
         </View>
         <View className="flex-row gap-x-3">
@@ -91,6 +96,7 @@ export function AdminDashboard() {
             label="Pending Tasks"
             color="bg-yellow-50"
             loading={isLoading}
+            onPress={() => router.push('/(app)/(tasks)')}
           />
           <View className="flex-1" />
         </View>

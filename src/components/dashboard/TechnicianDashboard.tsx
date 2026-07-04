@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { router } from 'expo-router'
 import { MetricCard } from './MetricCard'
 import { JobCard } from '@/components/jobs/JobCard'
 import { useDashboard, useProfile } from '@/services/users/users-queries'
@@ -83,12 +84,14 @@ export function TechnicianDashboard() {
             label="Total Tasks"
             color="bg-blue-50"
             loading={dashLoading}
+            onPress={() => router.push('/(app)/(tasks)')}
           />
           <MetricCard
             value={stats?.completed_tasks}
             label="Completed"
             color="bg-green-50"
             loading={dashLoading}
+            onPress={() => router.push('/(app)/(tasks)')}
           />
         </View>
         <View className="flex-row gap-x-3">
@@ -97,12 +100,14 @@ export function TechnicianDashboard() {
             label="Pending Tasks"
             color="bg-yellow-50"
             loading={dashLoading}
+            onPress={() => router.push('/(app)/(tasks)')}
           />
           <MetricCard
             value={stats?.job_aid_created}
             label="Job Aids"
             color="bg-purple-50"
             loading={dashLoading}
+            onPress={() => router.push('/(app)/(job-aids)')}
           />
         </View>
       </View>

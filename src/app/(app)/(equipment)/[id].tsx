@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -29,6 +29,8 @@ import {
   getPmJobStatus,
 } from '@/services/pm-strategy/pm-strategy-queries'
 import { useGenerateJobAid } from '@/services/job-aids/job-aids-queries'
+import { useLocationsTree } from '@/services/locations/locations-queries'
+import type { Location } from '@/services/locations/locations-types'
 import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
 import { QRCodeModal } from '@/components/ui/qr-code-modal'
 import type { UserRole } from '@/types/auth'
@@ -38,6 +40,18 @@ import type { FailureMode, FailureModeStatus } from '@/services/failure-mode/fai
 import type { Task } from '@/services/tasks/tasks-types'
 
 const ADMIN_ROLES: UserRole[] = ['superadmin', 'owner', 'admin']
+
+function findAncestors(locationId: string, nodes: Location[], trail: Location[] = []): Location[] {
+  for (const node of nodes) {
+    const current = [...trail, node]
+    if (node.id === locationId) return current
+    if (node.children?.length) {
+      const found = findAncestors(locationId, node.children, current)
+      if (found.length) return found
+    }
+  }
+  return []
+}
 
 const PM_MAX_POLLS = 10
 const PM_POLL_INTERVAL_MS = 3000
@@ -231,6 +245,11 @@ export default function EquipmentDetailScreen() {
   const generatePmStrategyMutation = useGeneratePmStrategy()
   const importPmStrategyMutation = useImportPmStrategy()
   const generateJobAidMutation = useGenerateJobAid()
+  const { data: locationsTreeData } = useLocationsTree()
+  const breadcrumbs = useMemo(() => {
+    if (!equipment?.location_id || !locationsTreeData?.data) return []
+    return findAncestors(equipment.location_id, locationsTreeData.data)
+  }, [equipment?.location_id, locationsTreeData])
 
   function handleDelete() {
     if (!id) return
@@ -410,23 +429,40 @@ export default function EquipmentDetailScreen() {
       {/* Header */}
       <View
         style={{ paddingTop: insets.top }}
-        className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center gap-x-3"
+        className="bg-white border-b border-gray-100 px-4 pb-3 gap-y-1"
       >
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
-          <Ionicons name="chevron-back" size={24} color="#111827" />
-        </Pressable>
-        <Text className="flex-1 text-base font-bold text-gray-900" numberOfLines={1}>
-          {equipment.name}
-        </Text>
-        {isAdmin && (
-          <Pressable
-            onPress={handleKebab}
-            disabled={isDeleting}
-            hitSlop={8}
-            className="active:opacity-60"
-          >
-            <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+        <View className="flex-row items-center gap-x-3">
+          <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+            <Ionicons name="chevron-back" size={24} color="#111827" />
           </Pressable>
+          <Text className="flex-1 text-base font-bold text-gray-900" numberOfLines={1}>
+            {equipment.name}
+          </Text>
+          {isAdmin && (
+            <Pressable
+              onPress={handleKebab}
+              disabled={isDeleting}
+              hitSlop={8}
+              className="active:opacity-60"
+            >
+              <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+            </Pressable>
+          )}
+        </View>
+
+        {breadcrumbs.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="ml-8">
+            <View className="flex-row items-center gap-x-1">
+              {breadcrumbs.map((crumb, i) => (
+                <View key={crumb.id} className="flex-row items-center gap-x-1">
+                  {i > 0 && <Ionicons name="chevron-forward" size={13} color="#9CA3AF" />}
+                  <Text className="text-sm text-gray-400">{crumb.name}</Text>
+                </View>
+              ))}
+              <Ionicons name="chevron-forward" size={13} color="#9CA3AF" />
+              <Text className="text-sm font-semibold text-gray-600">{equipment.name}</Text>
+            </View>
+          </ScrollView>
         )}
       </View>
 
