@@ -1,5 +1,20 @@
-export type FailureModeStatus = 'open' | 'in_progress' | 'resolved'
-export type FailureModePriority = 'low' | 'medium' | 'high'
+export type FailureModeStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
+export type ContributionType =
+  | 'Problem Solved'
+  | 'Improvement'
+  | 'Best Practice'
+  | 'Lesson Learned'
+  | 'Troubleshooting Tip'
+  | 'Safety Observation'
+  | 'PM Optimization'
+
+interface FailureModeUserRef {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  role: string
+}
 
 export interface FailureMode {
   id: string
@@ -8,13 +23,15 @@ export interface FailureMode {
   image: string | null
   title: string
   status: FailureModeStatus
-  priority: FailureModePriority
+  priority: ContributionType
   resolutions: string[]
   due_date: string | null
+  approved_by: string | null
   created_at: string
   updated_at: string
   equipment?: { id: string; name: string; reference_code: string }
-  reporter?: { id: string; first_name: string; last_name: string; email: string; role: string }
+  reporter?: FailureModeUserRef
+  approver?: FailureModeUserRef | null
 }
 
 export interface FailureModesResponse {
@@ -29,6 +46,24 @@ export interface FailureModeResponse {
   message: string
 }
 
+export interface FailureModesPendingApprovalMeta {
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface FailureModesPendingApprovalResponse {
+  status: string
+  data: FailureMode[]
+  meta: FailureModesPendingApprovalMeta
+}
+
+export interface FailureModesPendingApprovalQueryParams {
+  page?: number
+  limit?: number
+}
+
 export interface FailureModesQueryParams {
   page?: number
   limit?: number
@@ -41,8 +76,8 @@ export interface CreateFailureModeInput {
   equipment_id: string
   reported_by: string
   title: string
-  status: FailureModeStatus
-  priority: FailureModePriority
+  status?: FailureModeStatus
+  priority: ContributionType
   resolutions: string[]
   due_date?: string | null
   image?: string
@@ -52,7 +87,7 @@ export interface UpdateFailureModeInput {
   failureModeId: string
   title?: string
   status?: FailureModeStatus
-  priority?: FailureModePriority
+  priority?: ContributionType
   resolutions?: string[]
   due_date?: string | null
   equipment_id?: string

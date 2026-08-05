@@ -64,7 +64,8 @@ const STATUS_BADGE = {
 const FM_STATUS_BADGE: Record<FailureModeStatus, { bg: string; text: string; label: string }> = {
   open: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Open' },
   in_progress: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'In Progress' },
-  resolved: { bg: 'bg-green-100', text: 'text-green-700', label: 'Resolved' },
+  resolved: { bg: 'bg-green-100', text: 'text-green-700', label: 'Approved' },
+  closed: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Closed' },
 }
 
 const INGEST_BADGE: Record<IngestJob['status'], { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }> = {
@@ -195,7 +196,7 @@ function FailureModePreviewRow({ item }: { item: FailureMode }) {
   const badge = FM_STATUS_BADGE[item.status] ?? FM_STATUS_BADGE.open
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/(app)/(failure-mode)/[id]', params: { id: item.id } })}
+      onPress={() => router.push({ pathname: '/(app)/(contributions)/[id]', params: { id: item.id } })}
       className="flex-row items-center gap-x-3 py-2.5 border-b border-gray-50 active:opacity-70"
     >
       <View className="flex-1 gap-y-0.5 min-w-0">
@@ -629,15 +630,15 @@ export default function EquipmentDetailScreen() {
           </View>
         )}
 
-        {/* Failure Mode */}
+        {/* Contributions */}
         {failureModes.length > 0 && (
           <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
             <SectionHeader
-              title="Failure Mode"
+              title="Contributions"
               count={failureModes.length}
               onViewAll={() =>
                 router.push({
-                  pathname: '/(app)/(equipment)/failure-mode-list',
+                  pathname: '/(app)/(equipment)/contributions-list',
                   params: { equipment_id: id, title: equipment.name },
                 })
               }

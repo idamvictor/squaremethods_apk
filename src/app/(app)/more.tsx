@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { label: 'Jobs', icon: '💼', href: '/(app)/(jobs)' as const },
   { label: 'Tasks', icon: '✅', href: '/(app)/(tasks)' as const },
   { label: 'Users', icon: '👥', href: '/(app)/(users)' as const },
-  { label: 'Failure Mode', icon: '⚠️', href: '/(app)/(failure-mode)' as const },
+  { label: 'Contributions', icon: '🔁', href: '/(app)/(contributions)' as const },
   { label: 'Settings', icon: '⚙️', href: '/(app)/(settings)' as const },
 ]
 

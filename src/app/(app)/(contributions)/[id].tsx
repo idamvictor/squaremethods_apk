@@ -13,22 +13,97 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
 import {
   useFailureModeById,
-  useUpdateFailureMode,
   useDeleteFailureMode,
 } from '@/services/failure-mode/failure-mode-queries'
-import type { FailureModeStatus } from '@/services/failure-mode/failure-mode-types'
+import type { ContributionType, FailureMode, FailureModeStatus } from '@/services/failure-mode/failure-mode-types'
 import { usePermissions } from '@/lib/permissions'
+import { useFailureModeApprovalActions } from '@/hooks/use-failure-mode-approval-actions'
 
 const STATUS_STYLE: Record<FailureModeStatus, { bg: string; text: string; label: string }> = {
   open: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Open' },
   in_progress: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'In Progress' },
-  resolved: { bg: 'bg-green-100', text: 'text-green-700', label: 'Resolved' },
+  resolved: { bg: 'bg-green-100', text: 'text-green-700', label: 'Approved' },
+  closed: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Closed' },
 }
 
-const PRIORITY_STYLE: Record<string, { bg: string; text: string }> = {
-  high: { bg: 'bg-orange-100', text: 'text-orange-600' },
-  medium: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  low: { bg: 'bg-green-100', text: 'text-green-700' },
+const CONTRIBUTION_TYPE_STYLE: Record<ContributionType, { bg: string; text: string }> = {
+  'Problem Solved': { bg: 'bg-green-100', text: 'text-green-700' },
+  Improvement: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  'Best Practice': { bg: 'bg-purple-100', text: 'text-purple-700' },
+  'Lesson Learned': { bg: 'bg-amber-100', text: 'text-amber-700' },
+  'Troubleshooting Tip': { bg: 'bg-cyan-100', text: 'text-cyan-700' },
+  'Safety Observation': { bg: 'bg-red-100', text: 'text-red-700' },
+  'PM Optimization': { bg: 'bg-indigo-100', text: 'text-indigo-700' },
+}
+
+function ApprovalActionsBar({
+  fm,
+  insetsBottom,
+}: {
+  fm: Pick<FailureMode, 'id' | 'status' | 'reported_by'> & { reporter?: FailureMode['reporter'] }
+  insetsBottom: number
+}) {
+  const { canApprove, isPendingOwnApproval, canReopen, approve, reopen, isSaving } =
+    useFailureModeApprovalActions(fm)
+
+  function handleApprove() {
+    Alert.alert(
+      'Approve this contribution?',
+      `This notifies ${fm.reporter?.first_name ?? 'the reporter'} that it's been approved.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Approve', onPress: () => approve() },
+      ],
+    )
+  }
+
+  function handleReopen() {
+    Alert.alert(
+      'Reopen this contribution?',
+      'It will need to be approved again, and clears the current approval.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Reopen', style: 'destructive', onPress: () => reopen() },
+      ],
+    )
+  }
+
+  if (!canApprove && !isPendingOwnApproval && !canReopen) return null
+
+  return (
+    <View
+      style={{ paddingBottom: insetsBottom + 8 }}
+      className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pt-3 gap-y-2"
+    >
+      {canApprove && (
+        <Pressable
+          onPress={handleApprove}
+          disabled={isSaving}
+          className="h-12 rounded-2xl bg-blue-600 items-center justify-center active:opacity-80"
+        >
+          <Text className="text-sm font-semibold text-white">
+            {isSaving ? 'Saving…' : 'Approve'}
+          </Text>
+        </Pressable>
+      )}
+      {isPendingOwnApproval && (
+        <Text className="text-xs text-gray-400 italic text-center py-3">
+          Awaiting approval from another reviewer
+        </Text>
+      )}
+      {canReopen && (
+        <Pressable
+          onPress={handleReopen}
+          disabled={isSaving}
+          className="h-12 rounded-2xl border border-gray-200 items-center justify-center active:opacity-70"
+        >
+          <Text className="text-sm font-semibold text-gray-700">
+            {isSaving ? 'Saving…' : 'Reopen'}
+          </Text>
+        </Pressable>
+      )}
+    </View>
+  )
 }
 
 function formatDate(dateStr: string | null | undefined) {
@@ -53,24 +128,13 @@ export default function FailureModeDetailScreen() {
   const { isAdmin } = usePermissions()
 
   const { data: fm, isLoading, error } = useFailureModeById(id)
-  const { mutate: updateFm, isPending: isUpdating } = useUpdateFailureMode()
   const { mutate: deleteFm, isPending: isDeleting } = useDeleteFailureMode()
 
-  const canAct = isAdmin || user?.id === fm?.reported_by
-
-  function handleStatusTransition() {
-    if (!id || !fm) return
-    const nextStatus: FailureModeStatus = fm.status === 'open' ? 'in_progress' : 'resolved'
-    const label = nextStatus === 'in_progress' ? 'Mark In Progress' : 'Mark Resolved'
-    Alert.alert(label, undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Confirm', onPress: () => updateFm({ failureModeId: id, status: nextStatus }) },
-    ])
-  }
+  const canModify = isAdmin || user?.id === fm?.reported_by
 
   function handleDelete() {
     if (!id) return
-    Alert.alert('Delete Failure Mode', 'This action cannot be undone.', [
+    Alert.alert('Delete Contribution', 'This action cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -84,7 +148,7 @@ export default function FailureModeDetailScreen() {
     Alert.alert('Actions', undefined, [
       {
         text: 'Edit',
-        onPress: () => router.push({ pathname: '/(app)/(failure-mode)/edit', params: { id } }),
+        onPress: () => router.push({ pathname: '/(app)/(contributions)/edit', params: { id } }),
       },
       { text: 'Delete', style: 'destructive', onPress: handleDelete },
       { text: 'Cancel', style: 'cancel' },
@@ -102,7 +166,7 @@ export default function FailureModeDetailScreen() {
   if (error || !fm) {
     return (
       <View className="flex-1 bg-gray-50 items-center justify-center gap-y-3" style={{ paddingTop: insets.top }}>
-        <Text className="text-sm text-gray-400">Failed to load failure mode</Text>
+        <Text className="text-sm text-gray-400">Failed to load contribution</Text>
         <Pressable onPress={() => router.back()} className="px-4 py-2 bg-blue-600 rounded-xl">
           <Text className="text-sm text-white font-medium">Go back</Text>
         </Pressable>
@@ -111,10 +175,7 @@ export default function FailureModeDetailScreen() {
   }
 
   const statusStyle = STATUS_STYLE[fm.status] ?? STATUS_STYLE.open
-  const priorityStyle = PRIORITY_STYLE[fm.priority] ?? { bg: 'bg-gray-100', text: 'text-gray-600' }
-  const showActionBar = canAct && fm.status !== 'resolved'
-  const actionLabel = fm.status === 'open' ? 'Mark In Progress' : 'Mark Resolved'
-  const actionColor = fm.status === 'open' ? 'bg-blue-600' : 'bg-green-600'
+  const contributionTypeStyle = CONTRIBUTION_TYPE_STYLE[fm.priority] ?? { bg: 'bg-gray-100', text: 'text-gray-600' }
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -129,7 +190,7 @@ export default function FailureModeDetailScreen() {
         <Text className="flex-1 text-base font-bold text-gray-900" numberOfLines={1}>
           {fm.title}
         </Text>
-        {canAct && (
+        {canModify && (
           <Pressable onPress={handleKebab} hitSlop={8} className="active:opacity-60">
             <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
           </Pressable>
@@ -137,7 +198,7 @@ export default function FailureModeDetailScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + (showActionBar ? 88 : 24) }}
+        contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 96 }}
       >
         {/* Hero image card */}
         <View
@@ -158,13 +219,13 @@ export default function FailureModeDetailScreen() {
           )}
         </View>
 
-        {/* Status + Priority badges */}
+        {/* Status + Contribution Type badges */}
         <View className="flex-row gap-x-2 flex-wrap">
           <View className={`px-3 py-1 rounded-full ${statusStyle.bg}`}>
             <Text className={`text-xs font-semibold ${statusStyle.text}`}>{statusStyle.label}</Text>
           </View>
-          <View className={`px-3 py-1 rounded-full ${priorityStyle.bg}`}>
-            <Text className={`text-xs font-semibold ${priorityStyle.text} capitalize`}>{fm.priority} Priority</Text>
+          <View className={`px-3 py-1 rounded-full ${contributionTypeStyle.bg}`}>
+            <Text className={`text-xs font-semibold ${contributionTypeStyle.text}`}>{fm.priority}</Text>
           </View>
         </View>
 
@@ -176,7 +237,7 @@ export default function FailureModeDetailScreen() {
             </View>
             <View className="flex-1">
               <InfoRow
-                label="Reporter"
+                label="Contributed By"
                 value={
                   fm.reporter
                     ? `${fm.reporter.first_name} ${fm.reporter.last_name}`.trim()
@@ -187,7 +248,7 @@ export default function FailureModeDetailScreen() {
           </View>
           <View className="flex-row gap-x-4">
             <View className="flex-1">
-              <InfoRow label="Due Date" value={formatDate(fm.due_date)} />
+              <InfoRow label="Date" value={formatDate(fm.due_date)} />
             </View>
             <View className="flex-1">
               <InfoRow label="Ref Code" value={fm.equipment?.reference_code ?? '—'} />
@@ -195,11 +256,21 @@ export default function FailureModeDetailScreen() {
           </View>
         </View>
 
-        {/* Resolutions */}
+        {/* Approved By */}
+        {fm.approver && (
+          <View className="bg-white rounded-2xl p-4 gap-y-1">
+            <Text className="text-xs text-gray-400 font-medium">Approved By</Text>
+            <Text className="text-sm text-gray-800 font-medium">
+              {`${fm.approver.first_name} ${fm.approver.last_name}`.trim()}
+            </Text>
+          </View>
+        )}
+
+        {/* Key Points */}
         {fm.resolutions && fm.resolutions.length > 0 && (
           <View className="bg-green-50 border border-green-200 rounded-2xl p-4 gap-y-2">
             <Text className="text-xs font-semibold text-green-700 uppercase tracking-wide">
-              Resolutions ({fm.resolutions.length})
+              Key Points ({fm.resolutions.length})
             </Text>
             {fm.resolutions.map((r, i) => (
               <View key={i} className="flex-row items-start gap-x-2">
@@ -211,23 +282,7 @@ export default function FailureModeDetailScreen() {
         )}
       </ScrollView>
 
-      {/* Sticky action bar */}
-      {showActionBar && (
-        <View
-          style={{ paddingBottom: insets.bottom + 8 }}
-          className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pt-3"
-        >
-          <Pressable
-            onPress={handleStatusTransition}
-            disabled={isUpdating}
-            className={`h-12 rounded-2xl ${actionColor} items-center justify-center active:opacity-80`}
-          >
-            <Text className="text-sm font-semibold text-white">
-              {isUpdating ? 'Updating…' : actionLabel}
-            </Text>
-          </Pressable>
-        </View>
-      )}
+      <ApprovalActionsBar fm={fm} insetsBottom={insets.bottom} />
     </View>
   )
 }

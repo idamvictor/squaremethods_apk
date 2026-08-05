@@ -4,17 +4,40 @@ import type {
   FailureModesResponse,
   FailureModeResponse,
   FailureModesQueryParams,
+  FailureModesPendingApprovalResponse,
+  FailureModesPendingApprovalQueryParams,
   CreateFailureModeInput,
   UpdateFailureModeInput,
 } from './failure-mode-types'
 
-export function useFailureModes(params?: FailureModesQueryParams) {
+export function useFailureModes(
+  params?: FailureModesQueryParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: ['failure-modes', params],
     queryFn: async () => {
       const res = await apiClient.get<FailureModesResponse>('/failure-modes', { params })
       return res.data
     },
+    enabled: options?.enabled ?? true,
+  })
+}
+
+export function useFailureModesPendingApproval(
+  params?: FailureModesPendingApprovalQueryParams,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ['failure-modes-pending-approval', params],
+    queryFn: async () => {
+      const res = await apiClient.get<FailureModesPendingApprovalResponse>(
+        '/failure-modes/pending-approval',
+        { params },
+      )
+      return res.data
+    },
+    enabled: options?.enabled ?? true,
   })
 }
 
@@ -52,6 +75,7 @@ export function useUpdateFailureMode() {
     onSuccess: (_data, { failureModeId }) => {
       qc.invalidateQueries({ queryKey: ['failure-modes', failureModeId] })
       qc.invalidateQueries({ queryKey: ['failure-modes'] })
+      qc.invalidateQueries({ queryKey: ['failure-modes-pending-approval'] })
     },
   })
 }
