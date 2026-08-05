@@ -18,11 +18,11 @@ import {
   useDeleteJobAid,
   useDeleteProcedure,
   useJobAidById,
-  usePublishJobAid,
-  useUnpublishJobAid,
 } from '@/services/job-aids/job-aids-queries'
-import type { JobAid, Procedure } from '@/services/job-aids/job-aids-types'
+import type { JobAid, JobAidStatus, Procedure } from '@/services/job-aids/job-aids-types'
 import { useAuthStore } from '@/store/auth-store'
+import { usePermissions } from '@/lib/permissions'
+import { useJobAidApprovalActions } from '@/hooks/use-job-aid-approval-actions'
 
 function buildJobAidHtml(jobAid: JobAid) {
   const sortedProcedures = [...(jobAid.procedures ?? [])].sort((a, b) => a.step - b.step)
@@ -60,20 +60,103 @@ function buildJobAidHtml(jobAid: JobAid) {
   `
 }
 
-const ADMIN_ROLES = ['superadmin', 'owner', 'admin']
+const STATUS_STYLE: Record<JobAidStatus, { bg: string; dot: string; text: string; label: string }> = {
+  draft: { bg: 'bg-amber-100', dot: 'bg-amber-400', text: 'text-amber-700', label: 'Draft' },
+  pending_approval: { bg: 'bg-blue-100', dot: 'bg-blue-500', text: 'text-blue-700', label: 'Pending Approval' },
+  published: { bg: 'bg-green-100', dot: 'bg-green-500', text: 'text-green-700', label: 'Published' },
+}
 
-function StatusBadge({ status }: { status: 'draft' | 'published' }) {
-  const isPublished = status === 'published'
+function StatusBadge({ status }: { status: JobAidStatus }) {
+  const style = STATUS_STYLE[status]
   return (
-    <View
-      className={`flex-row items-center gap-x-1.5 px-3 py-1 rounded-full ${
-        isPublished ? 'bg-green-100' : 'bg-amber-100'
-      }`}
-    >
-      <View className={`w-2 h-2 rounded-full ${isPublished ? 'bg-green-500' : 'bg-amber-400'}`} />
-      <Text className={`text-xs font-semibold ${isPublished ? 'text-green-700' : 'text-amber-700'}`}>
-        {isPublished ? 'Published' : 'Draft'}
-      </Text>
+    <View className={`flex-row items-center gap-x-1.5 px-3 py-1 rounded-full ${style.bg}`}>
+      <View className={`w-2 h-2 rounded-full ${style.dot}`} />
+      <Text className={`text-xs font-semibold ${style.text}`}>{style.label}</Text>
+    </View>
+  )
+}
+
+function ApprovalActionsBar({ jobAid }: { jobAid: JobAid }) {
+  const {
+    canSubmitForApproval,
+    canApprove,
+    isPendingOwnApproval,
+    canUnpublish,
+    submitForApproval,
+    approve,
+    unpublish,
+    isSubmitting,
+    isApproving,
+    isUnpublishing,
+  } = useJobAidApprovalActions(jobAid)
+
+  function handleApprove() {
+    Alert.alert(
+      'Approve this job aid?',
+      `This publishes the job aid and notifies ${jobAid.creator?.first_name ?? 'the creator'}.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Approve', onPress: () => approve() },
+      ],
+    )
+  }
+
+  function handleUnpublish() {
+    Alert.alert(
+      'Revert to draft?',
+      'It will no longer be visible to technicians and will need to go through approval again before it can be published.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Unpublish', style: 'destructive', onPress: () => unpublish() },
+      ],
+    )
+  }
+
+  if (!canSubmitForApproval && !canApprove && !isPendingOwnApproval && !canUnpublish) {
+    return null
+  }
+
+  return (
+    <View className="flex-row items-center flex-wrap gap-2">
+      {canSubmitForApproval && (
+        <Pressable
+          onPress={() => submitForApproval()}
+          disabled={isSubmitting}
+          className="flex-row items-center gap-x-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-full active:opacity-70"
+        >
+          <Ionicons name="send-outline" size={14} color="#4B5563" />
+          <Text className="text-xs font-semibold text-gray-700">
+            {isSubmitting ? 'Submitting…' : 'Submit for Approval'}
+          </Text>
+        </Pressable>
+      )}
+      {canApprove && (
+        <Pressable
+          onPress={handleApprove}
+          disabled={isApproving}
+          className="flex-row items-center gap-x-1.5 bg-blue-600 px-3 py-1.5 rounded-full active:opacity-70"
+        >
+          <Ionicons name="checkmark-circle-outline" size={14} color="#FFFFFF" />
+          <Text className="text-xs font-semibold text-white">
+            {isApproving ? 'Approving…' : 'Approve'}
+          </Text>
+        </Pressable>
+      )}
+      {isPendingOwnApproval && (
+        <Text className="text-xs text-gray-400 italic">Awaiting approval from another admin</Text>
+      )}
+      {canUnpublish && (
+        <Pressable
+          onPress={handleUnpublish}
+          disabled={isUnpublishing}
+          className="flex-row items-center gap-x-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-full active:opacity-70"
+        >
+          <Ionicons name="arrow-undo-outline" size={14} color="#4B5563" />
+          <Text className="text-xs font-semibold text-gray-700">
+            {isUnpublishing ? 'Unpublishing…' : 'Unpublish'}
+          </Text>
+        </Pressable>
+      )}
     </View>
   )
 }
@@ -82,22 +165,19 @@ export default function JobAidDetailScreen() {
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { user } = useAuthStore()
-  const isAdmin = ADMIN_ROLES.includes(user?.role ?? '')
+  const { isAdmin } = usePermissions()
 
   const [expanded, setExpanded] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
 
   const { data, isLoading, error } = useJobAidById(id)
   const { mutate: deleteJobAid, isPending: isDeleting } = useDeleteJobAid()
-  const { mutate: publishJobAid } = usePublishJobAid()
-  const { mutate: unpublishJobAid } = useUnpublishJobAid()
   const { mutate: deleteProcedure } = useDeleteProcedure()
 
   const jobAid = data?.data
 
   function handleKebab() {
     if (!jobAid) return
-    const publishLabel = jobAid.status === 'draft' ? 'Publish' : 'Unpublish'
     Alert.alert(jobAid.title, undefined, [
       {
         text: 'Edit',
@@ -105,14 +185,9 @@ export default function JobAidDetailScreen() {
           router.push({ pathname: '/(app)/(job-aids)/edit', params: { id: jobAid.id } }),
       },
       {
-        text: publishLabel,
-        onPress: () => {
-          if (jobAid.status === 'draft') {
-            publishJobAid(jobAid.id)
-          } else {
-            unpublishJobAid(jobAid.id)
-          }
-        },
+        text: 'Version History',
+        onPress: () =>
+          router.push({ pathname: '/(app)/(job-aids)/version-history', params: { id: jobAid.id } }),
       },
       {
         text: 'Delete',
@@ -289,6 +364,7 @@ export default function JobAidDetailScreen() {
             )}
             <StatusBadge status={jobAid.status} />
           </View>
+          {isAdmin && <ApprovalActionsBar jobAid={jobAid} />}
         </View>
 
         {/* Meta row */}

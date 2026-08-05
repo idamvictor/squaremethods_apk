@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useUsers } from '@/services/users/users-queries'
-import { useAuthStore } from '@/store/auth-store'
+import { usePermissions } from '@/lib/permissions'
+import { AccessRestricted } from '@/components/ui/access-restricted'
 import type { CompanyUser } from '@/services/users/users-types'
 
 const ROLE_FILTERS = ['all', 'admin', 'editor', 'viewer', 'technician'] as const
@@ -64,8 +65,7 @@ function UserCard({ item, onPress }: { item: CompanyUser; onPress: () => void })
 
 export default function UsersScreen() {
   const insets = useSafeAreaInsets()
-  const currentUser = useAuthStore((s) => s.user)
-  const isAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin' || currentUser?.role === 'superadmin'
+  const { isAdmin, isTechnician } = usePermissions()
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -106,16 +106,8 @@ export default function UsersScreen() {
     }
   }, [data, page])
 
-  if (currentUser?.role === 'technician') {
-    return (
-      <View className="flex-1 bg-gray-50 items-center justify-center gap-y-3" style={{ paddingTop: insets.top }}>
-        <Ionicons name="lock-closed-outline" size={40} color="#D1D5DB" />
-        <Text className="text-sm text-gray-400">Access restricted</Text>
-        <Pressable onPress={() => router.back()} className="px-4 py-2 bg-blue-600 rounded-xl">
-          <Text className="text-sm text-white font-medium">Go back</Text>
-        </Pressable>
-      </View>
-    )
+  if (isTechnician) {
+    return <AccessRestricted />
   }
 
   function handleEndReached() {

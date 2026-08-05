@@ -1,4 +1,4 @@
-export type JobAidStatus = 'draft' | 'published'
+export type JobAidStatus = 'draft' | 'pending_approval' | 'published'
 export type JobAidCategory = 'Maintenance' | 'Safety' | 'Operations'
 
 export interface JobAidCreator {
@@ -44,6 +44,7 @@ export interface JobAid {
   slug: string
   category: JobAidCategory | null
   instruction: string
+  created_by: string
   status: JobAidStatus
   image: string | null
   estimated_duration: number | null
@@ -51,11 +52,52 @@ export interface JobAid {
   view_count: number
   scan_count: number
   published_at: string | null
+  approved_by: string | null
   createdAt: string
   updatedAt: string
   creator: JobAidCreator | null
+  approver: JobAidCreator | null
   assignedEquipments: JobAidEquipment[]
   procedures: Procedure[]
+}
+
+export interface JobAidVersionSnapshotProcedure {
+  step: number
+  title: string
+  instruction: string
+  image: string | null
+  precautions: string[]
+}
+
+export interface JobAidVersionSnapshot {
+  title: string
+  slug: string
+  category: string | null
+  instruction: string
+  image: string | null
+  documents: string[]
+  estimated_duration: number | null
+  procedures: JobAidVersionSnapshotProcedure[]
+  precautions: string[]
+}
+
+export interface JobAidVersion {
+  id: string
+  job_aid_id: string
+  version_number: number
+  snapshot: JobAidVersionSnapshot
+  created_by: string
+  created_at: string
+}
+
+export interface JobAidVersionsListResponse {
+  status: string
+  data: JobAidVersion[]
+}
+
+export interface JobAidVersionResponse {
+  status: string
+  data: JobAidVersion
 }
 
 export interface JobAidsPagination {

@@ -12,6 +12,8 @@ import type {
   JobAidResponse,
   JobAidsQueryParams,
   JobAidsResponse,
+  JobAidVersionResponse,
+  JobAidVersionsListResponse,
   ProcedureResponse,
   ProceduresResponse,
   UpdateJobAidInput,
@@ -79,6 +81,18 @@ export function useDeleteJobAid() {
   })
 }
 
+export function useSubmitJobAidForApproval() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.post<JobAidResponse>(`/job-aids/${id}/submit-for-approval`).then((r) => r.data),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
+      qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY, id] })
+    },
+  })
+}
+
 export function usePublishJobAid() {
   const qc = useQueryClient()
   return useMutation({
@@ -122,6 +136,49 @@ export function useGenerateJobAid() {
         .post<GeneratedJobAidResponse>('/job-aids/generate', input)
         .then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] }),
+  })
+}
+
+// ── Version history ──────────────────────────────────────────────────────────
+
+export function useJobAidVersions(jobAidId: string) {
+  return useQuery({
+    queryKey: [JOB_AIDS_KEY, jobAidId, 'versions'],
+    queryFn: async () => {
+      const res = await apiClient.get<JobAidVersionsListResponse>(
+        `/job-aids/${jobAidId}/versions`,
+      )
+      return res.data
+    },
+    enabled: !!jobAidId,
+  })
+}
+
+export function useJobAidVersionDetails(jobAidId: string, versionId: string) {
+  return useQuery({
+    queryKey: [JOB_AIDS_KEY, jobAidId, 'versions', versionId],
+    queryFn: async () => {
+      const res = await apiClient.get<JobAidVersionResponse>(
+        `/job-aids/${jobAidId}/versions/${versionId}`,
+      )
+      return res.data
+    },
+    enabled: !!jobAidId && !!versionId,
+  })
+}
+
+export function useRestoreJobAidVersion(jobAidId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (versionId: string) =>
+      apiClient
+        .post<JobAidResponse>(`/job-aids/${jobAidId}/versions/${versionId}/restore`)
+        .then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY, jobAidId] })
+      qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
+      qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY, jobAidId, 'versions'] })
+    },
   })
 }
 

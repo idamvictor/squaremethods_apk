@@ -12,12 +12,10 @@ import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import { useAuthStore } from '@/store/auth-store'
 import { useTeams, useDeleteTeam, useTeamMembers } from '@/services/teams/teams-queries'
+import { usePermissions } from '@/lib/permissions'
+import { AccessRestricted } from '@/components/ui/access-restricted'
 import type { Team } from '@/services/teams/teams-types'
-import type { UserRole } from '@/types/auth'
-
-const ADMIN_ROLES: UserRole[] = ['superadmin', 'owner', 'admin', 'user', 'viewer']
 
 function TeamAvatarStack({ teamId }: { teamId: string }) {
   const { data, isLoading } = useTeamMembers(teamId)
@@ -148,8 +146,7 @@ function TeamCard({
 
 export default function TeamsScreen() {
   const insets = useSafeAreaInsets()
-  const user = useAuthStore((s) => s.user)
-  const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
+  const { isAdmin, isTechnician } = usePermissions()
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -170,16 +167,8 @@ export default function TeamsScreen() {
 
   const handleRefresh = useCallback(() => { refetch() }, [refetch])
 
-  if (user?.role === 'technician') {
-    return (
-      <View className="flex-1 bg-gray-50 items-center justify-center gap-y-3" style={{ paddingTop: insets.top }}>
-        <Ionicons name="lock-closed-outline" size={40} color="#D1D5DB" />
-        <Text className="text-sm text-gray-400">Access restricted</Text>
-        <Pressable onPress={() => router.back()} className="px-4 py-2 bg-blue-600 rounded-xl">
-          <Text className="text-sm text-white font-medium">Go back</Text>
-        </Pressable>
-      </View>
-    )
+  if (isTechnician) {
+    return <AccessRestricted />
   }
 
   function handleLongPress(team: Team) {

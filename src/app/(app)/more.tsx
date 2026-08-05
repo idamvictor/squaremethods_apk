@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '@/store/auth-store'
+import { usePermissions } from '@/lib/permissions'
 
 const NAV_ITEMS = [
   { label: 'Jobs', icon: '💼', href: '/(app)/(jobs)' as const },
@@ -18,7 +19,7 @@ export default function MoreScreen() {
   const insets = useSafeAreaInsets()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
-  const isTechnician = user?.role === 'technician'
+  const { isTechnician, isSuperAdmin } = usePermissions()
   const visibleItems = isTechnician
     ? NAV_ITEMS.filter((item) => !TECHNICIAN_HIDDEN.includes(item.href))
     : NAV_ITEMS
@@ -56,7 +57,7 @@ export default function MoreScreen() {
         </View>
 
         {/* Admin Console — superadmin only */}
-        {user?.role === 'superadmin' && (
+        {isSuperAdmin && (
           <View className="bg-white rounded-2xl overflow-hidden">
             <Pressable
               onPress={() => router.push('/(app)/(admin)')}

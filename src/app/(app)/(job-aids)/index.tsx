@@ -6,6 +6,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
@@ -18,16 +19,13 @@ import {
   useDeleteJobAid,
   useDuplicateJobAid,
   useJobAids,
-  usePublishJobAid,
-  useUnpublishJobAid,
 } from '@/services/job-aids/job-aids-queries'
 import type { JobAid } from '@/services/job-aids/job-aids-types'
-import { useAuthStore } from '@/store/auth-store'
+import { usePermissions } from '@/lib/permissions'
 
-const ADMIN_ROLES = ['superadmin', 'owner', 'admin']
 const LIMIT = 20
 
-type StatusFilter = 'all' | 'draft' | 'published'
+type StatusFilter = 'all' | 'draft' | 'pending_approval' | 'published'
 
 function CategoryBadge({ category }: { category: string | null }) {
   if (!category) return null
@@ -49,7 +47,12 @@ function JobAidCard({
   isAdmin: boolean
   onLongPress: () => void
 }) {
-  const isPublished = item.status === 'published'
+  const dotColor =
+    item.status === 'published'
+      ? 'bg-green-500'
+      : item.status === 'pending_approval'
+        ? 'bg-blue-500'
+        : 'bg-amber-400'
   return (
     <Pressable
       onPress={() =>
@@ -73,11 +76,7 @@ function JobAidCard({
           </View>
         )}
         {/* Status dot */}
-        <View
-          className={`absolute top-2 right-2 w-3 h-3 rounded-full border-2 border-white ${
-            isPublished ? 'bg-green-500' : 'bg-amber-400'
-          }`}
-        />
+        <View className={`absolute top-2 right-2 w-3 h-3 rounded-full border-2 border-white ${dotColor}`} />
       </View>
 
       {/* Card body */}
@@ -164,8 +163,7 @@ function DuplicateModal({
 
 export default function JobAidsScreen() {
   const insets = useSafeAreaInsets()
-  const { user } = useAuthStore()
-  const isAdmin = ADMIN_ROLES.includes(user?.role ?? '')
+  const { isAdmin } = usePermissions()
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -176,8 +174,6 @@ export default function JobAidsScreen() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { mutate: deleteJobAid } = useDeleteJobAid()
-  const { mutate: publishJobAid } = usePublishJobAid()
-  const { mutate: unpublishJobAid } = useUnpublishJobAid()
   const { mutate: duplicateJobAid, isPending: isDuplicating } = useDuplicateJobAid()
 
   const queryParams = {
@@ -212,7 +208,6 @@ export default function JobAidsScreen() {
   }
 
   function handleLongPress(item: JobAid) {
-    const publishLabel = item.status === 'draft' ? 'Publish' : 'Unpublish'
     Alert.alert(item.title, undefined, [
       {
         text: 'Edit',
@@ -240,16 +235,6 @@ export default function JobAidsScreen() {
         },
       },
       {
-        text: publishLabel,
-        onPress: () => {
-          if (item.status === 'draft') {
-            publishJobAid(item.id)
-          } else {
-            unpublishJobAid(item.id)
-          }
-        },
-      },
-      {
         text: 'Delete',
         style: 'destructive',
         onPress: () =>
@@ -271,6 +256,7 @@ export default function JobAidsScreen() {
   const STATUS_TABS: { label: string; value: StatusFilter }[] = [
     { label: 'All', value: 'all' },
     { label: 'Draft', value: 'draft' },
+    { label: 'Pending Approval', value: 'pending_approval' },
     { label: 'Published', value: 'published' },
   ]
 
@@ -312,7 +298,11 @@ export default function JobAidsScreen() {
         </View>
 
         {/* Status chips */}
-        <View className="flex-row gap-x-2">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8 }}
+        >
           {STATUS_TABS.map((s) => (
             <Pressable
               key={s.value}
@@ -332,7 +322,7 @@ export default function JobAidsScreen() {
               </Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
       </View>
 
       {/* List */}

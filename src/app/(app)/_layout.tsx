@@ -1,11 +1,11 @@
 import { Redirect, Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '@/store/auth-store'
+import { usePermissions } from '@/lib/permissions'
 
 export default function AppLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const user = useAuthStore((s) => s.user)
-  const isTechnician = user?.role === 'technician'
+  const { isTechnician } = usePermissions()
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />

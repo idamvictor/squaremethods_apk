@@ -22,6 +22,12 @@ import type { JobAidCategory, JobAidStatus } from '@/services/job-aids/job-aids-
 const CATEGORIES: JobAidCategory[] = ['Maintenance', 'Safety', 'Operations']
 const CATEGORY_ITEMS = CATEGORIES.map((c) => ({ label: c, value: c }))
 
+const STATUS_BADGE_STYLE: Record<JobAidStatus, { bg: string; dot: string; text: string; label: string }> = {
+  draft: { bg: 'bg-amber-100', dot: 'bg-amber-400', text: 'text-amber-700', label: 'Draft' },
+  pending_approval: { bg: 'bg-blue-100', dot: 'bg-blue-500', text: 'text-blue-700', label: 'Pending Approval' },
+  published: { bg: 'bg-green-100', dot: 'bg-green-500', text: 'text-green-700', label: 'Published' },
+}
+
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
     <Text className="text-sm font-medium text-gray-700 mb-1">
@@ -81,6 +87,7 @@ export default function EditJobAidScreen() {
   const [category, setCategory] = useState<JobAidCategory | ''>('')
   const [instruction, setInstruction] = useState('')
   const [duration, setDuration] = useState('')
+  // Display-only: status changes go through the approval workflow on the detail screen.
   const [status, setStatus] = useState<JobAidStatus>('draft')
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
   const [selectedEquipmentNames, setSelectedEquipmentNames] = useState<string[]>([])
@@ -130,7 +137,6 @@ export default function EditJobAidScreen() {
         title: title.trim(),
         category: category as JobAidCategory,
         instruction: instruction.trim(),
-        status,
         image: image || undefined,
         estimated_duration: duration ? Number(duration) : undefined,
         equipment_ids: selectedEquipmentIds,
@@ -284,26 +290,20 @@ export default function EditJobAidScreen() {
           </View>
         </View>
 
-        {/* Status */}
+        {/* Status (read-only) */}
         <View>
-          <FieldLabel label="Status" required />
-          <View className="flex-row gap-x-2">
-            {(['draft', 'published'] as JobAidStatus[]).map((s) => (
-              <Pressable
-                key={s}
-                onPress={() => setStatus(s)}
-                className={`flex-1 h-10 rounded-xl border items-center justify-center ${
-                  status === s ? 'bg-blue-600 border-blue-600' : 'border-gray-200 bg-white'
-                }`}
-              >
-                <Text
-                  className={`text-xs font-semibold capitalize ${status === s ? 'text-white' : 'text-gray-600'}`}
-                >
-                  {s}
-                </Text>
-              </Pressable>
-            ))}
+          <FieldLabel label="Status" />
+          <View
+            className={`self-start flex-row items-center gap-x-1.5 px-3 py-1 rounded-full ${STATUS_BADGE_STYLE[status].bg}`}
+          >
+            <View className={`w-2 h-2 rounded-full ${STATUS_BADGE_STYLE[status].dot}`} />
+            <Text className={`text-xs font-semibold ${STATUS_BADGE_STYLE[status].text}`}>
+              {STATUS_BADGE_STYLE[status].label}
+            </Text>
           </View>
+          <Text className="text-xs text-gray-400 mt-1.5">
+            Status changes through Submit for Approval, Approve, and Unpublish on the job aid's detail screen.
+          </Text>
         </View>
 
         {/* Assign Equipment */}

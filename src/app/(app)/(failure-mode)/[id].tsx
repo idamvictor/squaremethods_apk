@@ -17,9 +17,7 @@ import {
   useDeleteFailureMode,
 } from '@/services/failure-mode/failure-mode-queries'
 import type { FailureModeStatus } from '@/services/failure-mode/failure-mode-types'
-import type { UserRole } from '@/types/auth'
-
-const ADMIN_ROLES: UserRole[] = ['superadmin', 'owner', 'admin', 'user', 'viewer']
+import { usePermissions } from '@/lib/permissions'
 
 const STATUS_STYLE: Record<FailureModeStatus, { bg: string; text: string; label: string }> = {
   open: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Open' },
@@ -52,7 +50,7 @@ export default function FailureModeDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>()
   const id = Array.isArray(params.id) ? params.id[0] : params.id
   const user = useAuthStore((s) => s.user)
-  const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
+  const { isAdmin } = usePermissions()
 
   const { data: fm, isLoading, error } = useFailureModeById(id)
   const { mutate: updateFm, isPending: isUpdating } = useUpdateFailureMode()

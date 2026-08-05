@@ -17,7 +17,7 @@ import { useCreateJobAid } from '@/services/job-aids/job-aids-queries'
 import { useEquipment } from '@/services/equipment/equipment-queries'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
-import type { JobAidCategory, JobAidStatus } from '@/services/job-aids/job-aids-types'
+import type { JobAidCategory } from '@/services/job-aids/job-aids-types'
 
 const CATEGORIES: JobAidCategory[] = ['Maintenance', 'Safety', 'Operations']
 const CATEGORY_ITEMS = CATEGORIES.map((c) => ({ label: c, value: c }))
@@ -79,7 +79,6 @@ export default function CreateJobAidScreen() {
   const [category, setCategory] = useState<JobAidCategory | ''>('')
   const [instruction, setInstruction] = useState('')
   const [duration, setDuration] = useState('')
-  const [status, setStatus] = useState<JobAidStatus>('draft')
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
   const [selectedEquipmentNames, setSelectedEquipmentNames] = useState<string[]>([])
   const [equipmentSearch, setEquipmentSearch] = useState('')
@@ -111,7 +110,7 @@ export default function CreateJobAidScreen() {
         title: title.trim(),
         category: category as JobAidCategory,
         instruction: instruction.trim(),
-        status,
+        status: 'draft',
         image: image || undefined,
         estimated_duration: duration ? Number(duration) : undefined,
         equipment_ids: selectedEquipmentIds.length ? selectedEquipmentIds : undefined,
@@ -261,28 +260,6 @@ export default function CreateJobAidScreen() {
             <View className="h-12 px-4 bg-gray-100 rounded-xl items-center justify-center">
               <Text className="text-sm text-gray-500">min</Text>
             </View>
-          </View>
-        </View>
-
-        {/* Status */}
-        <View>
-          <FieldLabel label="Status" required />
-          <View className="flex-row gap-x-2">
-            {(['draft', 'published'] as JobAidStatus[]).map((s) => (
-              <Pressable
-                key={s}
-                onPress={() => setStatus(s)}
-                className={`flex-1 h-10 rounded-xl border items-center justify-center ${
-                  status === s ? 'bg-blue-600 border-blue-600' : 'border-gray-200 bg-white'
-                }`}
-              >
-                <Text
-                  className={`text-xs font-semibold capitalize ${status === s ? 'text-white' : 'text-gray-600'}`}
-                >
-                  {s}
-                </Text>
-              </Pressable>
-            ))}
           </View>
         </View>
 
