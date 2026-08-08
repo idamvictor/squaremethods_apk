@@ -138,7 +138,7 @@ export default function CreateEquipmentScreen() {
   const { data: typesData, isLoading: typesLoading } = useEquipmentTypes()
   const { data: hierarchyData } = useLocationsWithEquipment()
 
-  const typeItems = (typesData?.data ?? []).map((t) => ({ label: t.name, value: t.id }))
+  const typeItems = (typesData?.data ?? []).map((t) => ({ label: t.name, value: t.id, icon: t.icon }))
 
   function validate() {
     const e: Record<string, string> = {}

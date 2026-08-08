@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
+import { usePermissions } from '@/lib/permissions'
 import { useEquipmentById, useDeleteEquipment, useUpdateEquipment } from '@/services/equipment/equipment-queries'
 import { useTasks } from '@/services/tasks/tasks-queries'
 import {
@@ -35,13 +36,10 @@ import { useLocationsTree } from '@/services/locations/locations-queries'
 import type { Location } from '@/services/locations/locations-types'
 import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
 import { QRCodeModal } from '@/components/ui/qr-code-modal'
-import type { UserRole } from '@/types/auth'
 import type { JobAid } from '@/services/job-aids/job-aids-types'
 import type { IngestJob } from '@/services/documents/documents-types'
 import type { FailureMode, FailureModeStatus } from '@/services/failure-mode/failure-mode-types'
 import type { Task } from '@/services/tasks/tasks-types'
-
-const ADMIN_ROLES: UserRole[] = ['superadmin', 'owner', 'admin']
 
 function findAncestors(locationId: string, nodes: Location[], trail: Location[] = []): Location[] {
   for (const node of nodes) {
@@ -94,6 +92,13 @@ function fileExtension(url: string) {
   const name = formatFileNameFromUrl(url)
   const parts = name.split('.')
   return parts.length > 1 ? parts.pop()!.toUpperCase() : 'FILE'
+}
+
+function EquipmentTypeBadgeIcon({ icon }: { icon: string }) {
+  if (icon.startsWith('http://') || icon.startsWith('https://')) {
+    return <Image source={{ uri: icon }} style={{ width: 14, height: 14 }} contentFit="contain" />
+  }
+  return <Text className="text-xs">{icon}</Text>
 }
 
 function sleep(ms: number) {
@@ -223,7 +228,8 @@ export default function EquipmentDetailScreen() {
   const id = Array.isArray(params.id) ? params.id[0] : params.id
   const user = useAuthStore((s) => s.user)
   const company = useAuthStore((s) => s.company)
-  const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
+  const { isTechnician } = usePermissions()
+  const isAdmin = !isTechnician
 
   const [fileManagerOpen, setFileManagerOpen] = useState(false)
   const [qrModalVisible, setQrModalVisible] = useState(false)
@@ -553,7 +559,10 @@ export default function EquipmentDetailScreen() {
             <Text className={`text-xs font-semibold ${statusBadge.text}`}>{statusBadge.label}</Text>
           </View>
           {equipment.equipmentType && (
-            <View className="px-3 py-1 rounded-full bg-blue-100">
+            <View className="px-3 py-1 rounded-full bg-blue-100 flex-row items-center gap-x-1.5">
+              {equipment.equipmentType.icon && (
+                <EquipmentTypeBadgeIcon icon={equipment.equipmentType.icon} />
+              )}
               <Text className="text-xs font-semibold text-blue-700">
                 {equipment.equipmentType.name}
               </Text>

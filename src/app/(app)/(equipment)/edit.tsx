@@ -11,11 +11,18 @@ import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
+import { useAuthStore } from '@/store/auth-store'
 import { useEquipmentById, useUpdateEquipment } from '@/services/equipment/equipment-queries'
 import { useEquipmentTypes } from '@/services/equipment-types/equipment-types-queries'
+import { useDeleteIngestedDocument, useIngestDocument } from '@/services/documents/documents-queries'
 import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import type { EquipmentStatus } from '@/services/equipment/equipment-types'
+
+function formatFileNameFromUrl(url: string) {
+  const last = url.split('/').pop() ?? url
+  return decodeURIComponent(last)
+}
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
@@ -49,8 +56,11 @@ export default function EditEquipmentScreen() {
   const params = useLocalSearchParams<{ id: string }>()
   const id = Array.isArray(params.id) ? params.id[0] : params.id
 
+  const company = useAuthStore((s) => s.company)
   const { data: equipmentData, isLoading } = useEquipmentById(id)
   const { mutate: updateEquipment, isPending, error: apiError } = useUpdateEquipment()
+  const { mutate: ingestDocument } = useIngestDocument()
+  const { mutate: deleteIngestedDocument } = useDeleteIngestedDocument()
 
   const [name, setName] = useState('')
   const [status, setStatus] = useState<EquipmentStatus>('draft')
@@ -60,11 +70,15 @@ export default function EditEquipmentScreen() {
   const [typeId, setTypeId] = useState('')
   const [typeName, setTypeName] = useState('')
   const [showTypePicker, setShowTypePicker] = useState(false)
+  const [documents, setDocuments] = useState<string[]>([])
+  const [showDocumentPicker, setShowDocumentPicker] = useState(false)
+  const [addedDocuments, setAddedDocuments] = useState<string[]>([])
+  const [removedDocuments, setRemovedDocuments] = useState<string[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const initialized = useRef(false)
 
   const { data: typesData, isLoading: typesLoading } = useEquipmentTypes()
-  const typeItems = (typesData?.data ?? []).map((t) => ({ label: t.name, value: t.id }))
+  const typeItems = (typesData?.data ?? []).map((t) => ({ label: t.name, value: t.id, icon: t.icon }))
 
   useEffect(() => {
     if (equipmentData?.data && !initialized.current) {
@@ -75,8 +89,24 @@ export default function EditEquipmentScreen() {
       setImage(equipmentData.data.image ?? '')
       setTypeId(equipmentData.data.equipmentType?.id ?? '')
       setTypeName(equipmentData.data.equipmentType?.name ?? '')
+      setDocuments(equipmentData.data.documents ?? [])
     }
   }, [equipmentData])
+
+  function handleAddDocument(url: string) {
+    setDocuments((prev) => (prev.includes(url) ? prev : [...prev, url]))
+    setAddedDocuments((prev) => (prev.includes(url) ? prev : [...prev, url]))
+    setRemovedDocuments((prev) => prev.filter((d) => d !== url))
+    setShowDocumentPicker(false)
+  }
+
+  function handleRemoveDocument(url: string) {
+    setDocuments((prev) => prev.filter((d) => d !== url))
+    setAddedDocuments((prev) => prev.filter((d) => d !== url))
+    if ((equipment?.documents ?? []).includes(url)) {
+      setRemovedDocuments((prev) => (prev.includes(url) ? prev : [...prev, url]))
+    }
+  }
 
   const equipment = equipmentData?.data
   const apiErrorMsg =
@@ -100,9 +130,22 @@ export default function EditEquipmentScreen() {
           status,
           notes: notes.trim(),
           image: image || undefined,
+          documents,
         },
       },
-      { onSuccess: () => router.back() },
+      {
+        onSuccess: () => {
+          if (company?.id) {
+            addedDocuments.forEach((file_url) =>
+              ingestDocument({ file_url, equipment_id: id, company_id: company.id }),
+            )
+            removedDocuments.forEach((file_url) =>
+              deleteIngestedDocument({ file_url, company_id: company.id }),
+            )
+          }
+          router.back()
+        },
+      },
     )
   }
 
@@ -171,6 +214,37 @@ export default function EditEquipmentScreen() {
               </View>
             )}
           </Pressable>
+        </View>
+
+        {/* Documents */}
+        <View>
+          <View className="flex-row items-center justify-between mb-1">
+            <FieldLabel label="Documents" />
+            <Pressable onPress={() => setShowDocumentPicker(true)} className="active:opacity-60">
+              <Text className="text-xs font-semibold text-blue-600">+ Add Document</Text>
+            </Pressable>
+          </View>
+          {documents.length > 0 && (
+            <View className="gap-y-2">
+              {documents.map((url) => (
+                <View
+                  key={url}
+                  className="flex-row items-center justify-between bg-white rounded-xl border border-gray-100 px-3 py-2.5"
+                >
+                  <Text className="flex-1 text-sm text-gray-700 mr-2" numberOfLines={1}>
+                    {formatFileNameFromUrl(url)}
+                  </Text>
+                  <Pressable
+                    onPress={() => handleRemoveDocument(url)}
+                    hitSlop={8}
+                    className="active:opacity-60"
+                  >
+                    <Text className="text-xs font-semibold text-red-500">Remove</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Editable: Equipment Type */}
@@ -261,6 +335,12 @@ export default function EditEquipmentScreen() {
         visible={showImagePicker}
         onClose={() => setShowImagePicker(false)}
         onSelect={(url) => { setImage(url); setShowImagePicker(false) }}
+      />
+
+      <FileManagerSheet
+        visible={showDocumentPicker}
+        onClose={() => setShowDocumentPicker(false)}
+        onSelect={handleAddDocument}
       />
     </View>
   )

@@ -8,11 +8,20 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 
 export interface PickerItem {
   label: string
   value: string
+  icon?: string | null
+}
+
+function PickerItemIcon({ icon }: { icon: string }) {
+  if (icon.startsWith('http://') || icon.startsWith('https://')) {
+    return <Image source={{ uri: icon }} style={{ width: 18, height: 18 }} contentFit="contain" />
+  }
+  return <Text className="text-base">{icon}</Text>
 }
 
 interface BottomSheetPickerProps {
@@ -119,8 +128,9 @@ export function BottomSheetPicker({
                     onSelect(item.value)
                     onClose()
                   }}
-                  className="flex-row items-center px-5 py-3.5 active:bg-gray-50"
+                  className="flex-row items-center gap-x-2.5 px-5 py-3.5 active:bg-gray-50"
                 >
+                  {item.icon && <PickerItemIcon icon={item.icon} />}
                   <Text className={`flex-1 text-sm ${selected === item.value ? 'text-blue-600 font-semibold' : 'text-gray-700'}`}>
                     {item.label}
                   </Text>

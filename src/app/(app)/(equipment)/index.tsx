@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import * as DocumentPicker from 'expo-document-picker'
 import { useAuthStore } from '@/store/auth-store'
+import { usePermissions } from '@/lib/permissions'
 import { useDeleteEquipment, useImportEquipmentHierarchy } from '@/services/equipment/equipment-queries'
 import { useDeleteNode } from '@/services/documents/documents-queries'
 import {
@@ -26,9 +27,6 @@ import {
   useDeleteLocation,
 } from '@/services/locations/locations-queries'
 import type { Location, LocationEquipmentItem } from '@/services/locations/locations-types'
-import type { UserRole } from '@/types/auth'
-
-const ADMIN_ROLES: UserRole[] = ['superadmin', 'owner', 'admin']
 
 const STATUS_BADGE: Record<string, { bg: string; text: string }> = {
   draft: { bg: 'bg-gray-100', text: 'text-gray-500' },
@@ -401,7 +399,8 @@ export default function EquipmentScreen() {
   const insets = useSafeAreaInsets()
   const user = useAuthStore((s) => s.user)
   const company = useAuthStore((s) => s.company)
-  const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
+  const { isTechnician } = usePermissions()
+  const isAdmin = !isTechnician
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
