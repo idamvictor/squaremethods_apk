@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
@@ -44,10 +45,7 @@ export default function CompanySettingsScreen() {
   const apiError = (error as any)?.response?.data?.message ?? (error as any)?.message ?? null
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-gray-50"
-    >
+    <View className="flex-1 bg-gray-50">
       <View
         style={{ paddingTop: insets.top }}
         className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center gap-x-3"
@@ -58,7 +56,7 @@ export default function CompanySettingsScreen() {
         <Text className="text-lg font-bold text-gray-900">Company Settings</Text>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: insets.bottom + 32 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -109,7 +107,7 @@ export default function CompanySettingsScreen() {
           onPress={handleSave}
           disabled={isPending || isLoading}
         />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   )
 }

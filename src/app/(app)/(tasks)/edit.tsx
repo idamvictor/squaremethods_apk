@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -85,10 +83,7 @@ export default function EditTaskScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-gray-50"
-    >
+    <View className="flex-1 bg-gray-50">
       {/* Header */}
       <View style={{ paddingTop: insets.top }} className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-x-3">
@@ -110,7 +105,7 @@ export default function EditTaskScreen() {
         </Pressable>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 32 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -196,7 +191,7 @@ export default function EditTaskScreen() {
             </Pressable>
           )}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <BottomSheetPicker
         visible={showEquipmentPicker}
@@ -208,6 +203,6 @@ export default function EditTaskScreen() {
         loading={equipmentLoading}
         onSelect={handleEquipmentSelect}
       />
-    </KeyboardAvoidingView>
+    </View>
   )
 }

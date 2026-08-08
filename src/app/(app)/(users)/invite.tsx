@@ -2,15 +2,13 @@ import { useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   Share,
   Text,
   TextInput,
   View,
 } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
@@ -186,10 +184,7 @@ export default function InviteScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-gray-50"
-    >
+    <View className="flex-1 bg-gray-50">
       <View style={{ paddingTop: insets.top }} className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center gap-x-3">
         <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
           <Ionicons name="chevron-back" size={24} color="#111827" />
@@ -197,7 +192,7 @@ export default function InviteScreen() {
         <Text className="text-lg font-bold text-gray-900">Invitations</Text>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 32 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -385,7 +380,7 @@ export default function InviteScreen() {
             />
           ))}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Role pickers */}
       <BottomSheetPicker
@@ -413,6 +408,6 @@ export default function InviteScreen() {
           setShowGenRolePicker(false)
         }}
       />
-    </KeyboardAvoidingView>
+    </View>
   )
 }

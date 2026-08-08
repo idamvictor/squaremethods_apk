@@ -3,13 +3,12 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   Text,
   TextInput,
   View,
 } from 'react-native'
+import { KeyboardStickyView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -154,10 +153,7 @@ export default function EquipmentChatScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-gray-50"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View className="flex-1 bg-gray-50">
       <View
         style={{ paddingTop: insets.top }}
         className="bg-white border-b border-gray-100 px-4 pb-3 gap-y-3"
@@ -209,26 +205,28 @@ export default function EquipmentChatScreen() {
             }
           />
 
-          <View
-            style={{ paddingBottom: insets.bottom + 12 }}
-            className="flex-row items-end gap-x-2 px-4 pt-3 border-t border-gray-100 bg-white"
-          >
-            <TextInput
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Type a message…"
-              placeholderTextColor="#9CA3AF"
-              multiline
-              className="flex-1 bg-gray-100 rounded-2xl px-4 py-2.5 text-sm text-gray-800 max-h-28"
-            />
-            <Pressable
-              onPress={handleSend}
-              disabled={!inputText.trim() || sendMessageMutation.isPending}
-              className="w-10 h-10 rounded-full bg-[#208AEF] items-center justify-center active:opacity-80 disabled:opacity-40"
+          <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+            <View
+              style={{ paddingBottom: insets.bottom + 12 }}
+              className="flex-row items-end gap-x-2 px-4 pt-3 border-t border-gray-100 bg-white"
             >
-              <Ionicons name="send" size={16} color="#FFFFFF" />
-            </Pressable>
-          </View>
+              <TextInput
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Type a message…"
+                placeholderTextColor="#9CA3AF"
+                multiline
+                className="flex-1 bg-gray-100 rounded-2xl px-4 py-2.5 text-sm text-gray-800 max-h-28"
+              />
+              <Pressable
+                onPress={handleSend}
+                disabled={!inputText.trim() || sendMessageMutation.isPending}
+                className="w-10 h-10 rounded-full bg-[#208AEF] items-center justify-center active:opacity-80 disabled:opacity-40"
+              >
+                <Ionicons name="send" size={16} color="#FFFFFF" />
+              </Pressable>
+            </View>
+          </KeyboardStickyView>
         </>
       ) : (
         <View className="flex-1">
@@ -277,6 +275,6 @@ export default function EquipmentChatScreen() {
           )}
         </View>
       )}
-    </KeyboardAvoidingView>
+    </View>
   )
 }

@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
@@ -40,10 +38,7 @@ export default function CreateTeamScreen() {
     (apiError as any)?.response?.data?.message ?? (apiError as any)?.message ?? null
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-gray-50"
-    >
+    <View className="flex-1 bg-gray-50">
       {/* Header */}
       <View
         style={{ paddingTop: insets.top }}
@@ -64,7 +59,7 @@ export default function CreateTeamScreen() {
         </Pressable>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 32 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -105,7 +100,7 @@ export default function CreateTeamScreen() {
             textAlignVertical="top"
           />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   )
 }

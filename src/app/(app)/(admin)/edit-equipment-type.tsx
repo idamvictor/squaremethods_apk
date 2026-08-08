@@ -1,14 +1,12 @@
 import { useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   Switch,
   Text,
   TextInput,
   View,
 } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -79,11 +77,8 @@ export default function EditEquipmentTypeScreen() {
         </Text>
       </View>
 
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
+      <View className="flex-1">
+        <KeyboardAwareScrollView
           contentContainerStyle={{
             padding: 16,
             gap: 16,
@@ -152,8 +147,8 @@ export default function EditEquipmentTypeScreen() {
               {isPending ? 'Saving…' : isEditing ? 'Save Changes' : 'Add Equipment Type'}
             </Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
+      </View>
     </View>
   )
 }
