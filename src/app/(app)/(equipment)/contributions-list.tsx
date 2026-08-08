@@ -32,7 +32,14 @@ function FailureModeCard({ item }: { item: FailureMode }) {
           <Text className={`text-xs font-medium ${badge.text}`}>{badge.label}</Text>
         </View>
       </View>
-      <Text className="text-xs text-gray-500 mt-1.5">Due {formatDate(item.due_date)}</Text>
+      <View className="flex-row items-center gap-x-3 mt-1.5">
+        <Text className="text-xs text-gray-500">Due {formatDate(item.due_date)}</Text>
+        {item.reporter && (
+          <Text className="text-xs text-gray-500" numberOfLines={1}>
+            Reported by {item.reporter.first_name} {item.reporter.last_name}
+          </Text>
+        )}
+      </View>
     </Pressable>
   )
 }

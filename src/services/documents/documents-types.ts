@@ -35,6 +35,11 @@ export interface DeleteIngestedDocumentInput {
   company_id: string
 }
 
+export interface DeleteNodeInput {
+  equipment_id: string
+  company_id: string
+}
+
 export interface ChatApiAckResponse {
   status: string
   message: string

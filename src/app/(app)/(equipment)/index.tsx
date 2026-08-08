@@ -18,6 +18,7 @@ import { router } from 'expo-router'
 import * as DocumentPicker from 'expo-document-picker'
 import { useAuthStore } from '@/store/auth-store'
 import { useDeleteEquipment, useImportEquipmentHierarchy } from '@/services/equipment/equipment-queries'
+import { useDeleteNode } from '@/services/documents/documents-queries'
 import {
   useLocationsWithEquipment,
   useCreateLocation,
@@ -414,6 +415,7 @@ export default function EquipmentScreen() {
   const { mutate: updateLocation, isPending: isUpdating } = useUpdateLocation()
   const importHierarchyMutation = useImportEquipmentHierarchy()
   const { mutate: deleteLocation } = useDeleteLocation()
+  const deleteNodeMutation = useDeleteNode()
 
   const { data, isLoading, isFetching, refetch } = useLocationsWithEquipment()
   const roots = data?.data ?? []
@@ -497,7 +499,13 @@ export default function EquipmentScreen() {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => deleteEquipment(id, { onSuccess: () => refetch() }),
+        onPress: () =>
+          deleteEquipment(id, {
+            onSuccess: () => {
+              refetch()
+              if (company?.id) deleteNodeMutation.mutate({ equipment_id: id, company_id: company.id })
+            },
+          }),
       },
     ])
   }

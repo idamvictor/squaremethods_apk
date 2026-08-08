@@ -39,6 +39,10 @@ function JobAidCard({ item }: { item: JobAid }) {
         <Text className="text-xs text-gray-500" numberOfLines={1}>
           {item.category ?? 'Uncategorized'}
         </Text>
+        <Text className="text-xs text-gray-400" numberOfLines={1}>
+          {item.estimated_duration != null ? `Duration: ${item.estimated_duration} min` : 'Duration: —'}
+          {' · '}Views: {item.view_count}
+        </Text>
       </View>
     </Pressable>
   )

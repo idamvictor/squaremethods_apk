@@ -9,10 +9,14 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEquipmentById, useUpdateEquipment } from '@/services/equipment/equipment-queries'
+import { useEquipmentTypes } from '@/services/equipment-types/equipment-types-queries'
+import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
+import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import type { EquipmentStatus } from '@/services/equipment/equipment-types'
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
@@ -53,8 +57,16 @@ export default function EditEquipmentScreen() {
   const [name, setName] = useState('')
   const [status, setStatus] = useState<EquipmentStatus>('draft')
   const [notes, setNotes] = useState('')
+  const [image, setImage] = useState('')
+  const [showImagePicker, setShowImagePicker] = useState(false)
+  const [typeId, setTypeId] = useState('')
+  const [typeName, setTypeName] = useState('')
+  const [showTypePicker, setShowTypePicker] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const initialized = useRef(false)
+
+  const { data: typesData, isLoading: typesLoading } = useEquipmentTypes()
+  const typeItems = (typesData?.data ?? []).map((t) => ({ label: t.name, value: t.id }))
 
   useEffect(() => {
     if (equipmentData?.data && !initialized.current) {
@@ -62,6 +74,9 @@ export default function EditEquipmentScreen() {
       setName(equipmentData.data.name)
       setStatus(equipmentData.data.status)
       setNotes(equipmentData.data.notes ?? '')
+      setImage(equipmentData.data.image ?? '')
+      setTypeId(equipmentData.data.equipmentType?.id ?? '')
+      setTypeName(equipmentData.data.equipmentType?.name ?? '')
     }
   }, [equipmentData])
 
@@ -79,7 +94,16 @@ export default function EditEquipmentScreen() {
   function handleSave() {
     if (!id || !validate()) return
     updateEquipment(
-      { id, data: { name: name.trim(), status, notes: notes.trim() } },
+      {
+        id,
+        data: {
+          name: name.trim(),
+          equipment_type_id: typeId || undefined,
+          status,
+          notes: notes.trim(),
+          image: image || undefined,
+        },
+      },
       { onSuccess: () => router.back() },
     )
   }
@@ -130,8 +154,45 @@ export default function EditEquipmentScreen() {
           </View>
         )}
 
+        {/* Image */}
+        <View>
+          <FieldLabel label="Image" />
+          <Pressable
+            onPress={() => setShowImagePicker(true)}
+            className="rounded-xl overflow-hidden border border-dashed border-gray-300 bg-white active:opacity-70"
+            style={{ aspectRatio: 16 / 9 }}
+          >
+            {image ? (
+              <>
+                <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                <View className="absolute top-2 right-2 bg-black/50 rounded-lg px-2 py-1">
+                  <Text className="text-xs text-white font-medium">Change</Text>
+                </View>
+              </>
+            ) : (
+              <View className="flex-1 items-center justify-center gap-y-2">
+                <Ionicons name="camera-outline" size={32} color="#9CA3AF" />
+                <Text className="text-sm text-gray-400">Tap to add equipment image</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
+
+        {/* Editable: Equipment Type */}
+        <View>
+          <FieldLabel label="Equipment Type" />
+          <Pressable
+            onPress={() => setShowTypePicker(true)}
+            className="h-12 rounded-xl border border-gray-200 bg-white px-4 flex-row items-center justify-between"
+          >
+            <Text className={`text-sm ${typeName ? 'text-gray-800' : 'text-gray-400'}`} numberOfLines={1}>
+              {typeName || 'Select equipment type'}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
+          </Pressable>
+        </View>
+
         {/* Read-only fields */}
-        <ReadOnlyField label="Equipment Type" value={equipment?.equipmentType?.name ?? ''} />
         <ReadOnlyField label="Reference Code" value={equipment?.reference_code ?? ''} />
         <ReadOnlyField label="Location" value={equipment?.location?.name ?? ''} />
 
@@ -185,6 +246,27 @@ export default function EditEquipmentScreen() {
           />
         </View>
       </ScrollView>
+
+      <BottomSheetPicker
+        visible={showTypePicker}
+        onClose={() => setShowTypePicker(false)}
+        title="Select Equipment Type"
+        items={typeItems}
+        selected={typeId}
+        searchable
+        loading={typesLoading}
+        onSelect={(value) => {
+          const found = typeItems.find((t) => t.value === value)
+          setTypeId(value)
+          setTypeName(found?.label ?? '')
+        }}
+      />
+
+      <FileManagerSheet
+        visible={showImagePicker}
+        onClose={() => setShowImagePicker(false)}
+        onSelect={(url) => { setImage(url); setShowImagePicker(false) }}
+      />
     </KeyboardAvoidingView>
   )
 }

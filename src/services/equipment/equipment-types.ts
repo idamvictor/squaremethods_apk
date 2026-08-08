@@ -95,6 +95,7 @@ export interface CreateEquipmentInput {
 
 export interface UpdateEquipmentInput {
   name?: string
+  equipment_type_id?: string
   notes?: string
   status?: EquipmentStatus
   image?: string

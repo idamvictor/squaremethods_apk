@@ -20,6 +20,7 @@ import { useEquipmentById, useDeleteEquipment, useUpdateEquipment } from '@/serv
 import { useTasks } from '@/services/tasks/tasks-queries'
 import {
   useDeleteIngestedDocument,
+  useDeleteNode,
   useIngestDocument,
   useIngestStatus,
 } from '@/services/documents/documents-queries'
@@ -242,6 +243,7 @@ export default function EquipmentDetailScreen() {
   const ingestJobs = ingestStatusData?.jobs ?? []
   const { mutate: ingestDocument, isPending: isIngesting } = useIngestDocument()
   const { mutate: deleteIngestedDocument } = useDeleteIngestedDocument()
+  const deleteNodeMutation = useDeleteNode()
 
   const generatePmStrategyMutation = useGeneratePmStrategy()
   const importPmStrategyMutation = useImportPmStrategy()
@@ -259,7 +261,13 @@ export default function EquipmentDetailScreen() {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => deleteEquipment(id, { onSuccess: () => router.back() }),
+        onPress: () =>
+          deleteEquipment(id, {
+            onSuccess: () => {
+              if (company?.id) deleteNodeMutation.mutate({ equipment_id: id, company_id: company.id })
+              router.back()
+            },
+          }),
       },
     ])
   }
@@ -454,13 +462,48 @@ export default function EquipmentDetailScreen() {
         {breadcrumbs.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="ml-8">
             <View className="flex-row items-center gap-x-1">
-              {breadcrumbs.map((crumb, i) => (
-                <View key={crumb.id} className="flex-row items-center gap-x-1">
-                  {i > 0 && <Ionicons name="chevron-forward" size={13} color="#9CA3AF" />}
-                  <Text className="text-sm text-gray-400">{crumb.name}</Text>
-                </View>
-              ))}
+              <Pressable
+                onPress={() => router.push('/(app)/(equipment)')}
+                hitSlop={8}
+                className="active:opacity-60"
+              >
+                <Ionicons name="home-outline" size={14} color="#9CA3AF" />
+              </Pressable>
               <Ionicons name="chevron-forward" size={13} color="#9CA3AF" />
+
+              {breadcrumbs.length > 3 ? (
+                <>
+                  <Pressable
+                    onPress={() =>
+                      Alert.alert(
+                        'Location path',
+                        breadcrumbs
+                          .slice(0, -2)
+                          .map((c) => c.name)
+                          .join(' › '),
+                      )
+                    }
+                    hitSlop={8}
+                    className="active:opacity-60"
+                  >
+                    <Text className="text-sm text-gray-400">…</Text>
+                  </Pressable>
+                  <Ionicons name="chevron-forward" size={13} color="#9CA3AF" />
+                  {breadcrumbs.slice(-2).map((crumb) => (
+                    <View key={crumb.id} className="flex-row items-center gap-x-1">
+                      <Text className="text-sm text-gray-400">{crumb.name}</Text>
+                      <Ionicons name="chevron-forward" size={13} color="#9CA3AF" />
+                    </View>
+                  ))}
+                </>
+              ) : (
+                breadcrumbs.map((crumb) => (
+                  <View key={crumb.id} className="flex-row items-center gap-x-1">
+                    <Text className="text-sm text-gray-400">{crumb.name}</Text>
+                    <Ionicons name="chevron-forward" size={13} color="#9CA3AF" />
+                  </View>
+                ))
+              )}
               <Text className="text-sm font-semibold text-gray-600">{equipment.name}</Text>
             </View>
           </ScrollView>
@@ -470,6 +513,26 @@ export default function EquipmentDetailScreen() {
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 24 }}
       >
+        {/* Hero image */}
+        <View
+          className="w-full bg-gray-200 rounded-2xl overflow-hidden"
+          style={{ aspectRatio: 16 / 9 }}
+        >
+          {equipment.image ? (
+            <Image
+              source={{ uri: equipment.image }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center">
+              <Ionicons name="cube-outline" size={48} color="#9CA3AF" />
+              <Text className="text-xs text-gray-400 mt-1.5">No image available</Text>
+            </View>
+          )}
+        </View>
+
         {/* Status + Type badges */}
         <View className="flex-row gap-x-2 flex-wrap">
           <View className={`px-3 py-1 rounded-full ${statusBadge.bg}`}>
@@ -556,98 +619,98 @@ export default function EquipmentDetailScreen() {
           </View>
         )}
 
-        {/* QR Code indicator */}
-        {!!equipment.qrcode && (
-          <Pressable
-            onPress={() => setQrModalVisible(true)}
-            className="bg-white rounded-2xl p-4 flex-row items-center gap-x-3 active:opacity-80"
-          >
-            <View className="w-9 h-9 rounded-xl bg-blue-50 items-center justify-center">
-              <Ionicons name="qr-code-outline" size={20} color="#208AEF" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-sm font-semibold text-gray-800">QR Code</Text>
-              <Text className="text-xs text-gray-400 mt-0.5">QR code available for this equipment</Text>
-            </View>
-            <View className="w-2 h-2 rounded-full bg-green-400" />
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-          </Pressable>
-        )}
+        {/* QR Code */}
+        <Pressable
+          onPress={() => setQrModalVisible(true)}
+          className="bg-white rounded-2xl p-4 flex-row items-center gap-x-3 active:opacity-80"
+        >
+          <View className="w-9 h-9 rounded-xl bg-blue-50 items-center justify-center">
+            <Ionicons name="qr-code-outline" size={20} color="#208AEF" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm font-semibold text-gray-800">QR Code</Text>
+            <Text className="text-xs text-gray-400 mt-0.5">
+              {equipment.qrcode ? 'QR code available for this equipment' : 'No QR code yet — tap to generate'}
+            </Text>
+          </View>
+          <View className={`w-2 h-2 rounded-full ${equipment.qrcode ? 'bg-green-400' : 'bg-gray-300'}`} />
+          <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+        </Pressable>
 
         {/* Attached Job Aids */}
-        {jobAids.length > 0 && (
-          <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
-            <SectionHeader
-              title="Attached Job Aids"
-              count={jobAids.length}
-              onViewAll={() =>
-                router.push({
-                  pathname: '/(app)/(equipment)/job-aids-list',
-                  params: { equipment_id: id, title: equipment.name },
-                })
-              }
-              rightSlot={
-                isAdmin ? (
-                  <Pressable
-                    onPress={handleGenerateJobAid}
-                    disabled={generateJobAidMutation.isPending}
-                    className="flex-row items-center gap-x-1 active:opacity-60"
-                  >
-                    {generateJobAidMutation.isPending ? (
-                      <ActivityIndicator size="small" color="#208AEF" />
-                    ) : (
-                      <Ionicons name="sparkles-outline" size={14} color="#208AEF" />
-                    )}
-                    <Text className="text-xs font-semibold text-blue-600">
-                      {generateJobAidMutation.isPending ? 'Generating...' : 'Generate'}
-                    </Text>
-                  </Pressable>
-                ) : undefined
-              }
-            />
-            {jobAids.slice(0, 3).map((ja) => (
-              <JobAidPreviewRow key={ja.id} item={ja} />
-            ))}
-          </View>
-        )}
+        <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
+          <SectionHeader
+            title="Attached Job Aids"
+            count={jobAids.length}
+            onViewAll={() =>
+              router.push({
+                pathname: '/(app)/(equipment)/job-aids-list',
+                params: { equipment_id: id, title: equipment.name },
+              })
+            }
+            rightSlot={
+              isAdmin ? (
+                <Pressable
+                  onPress={handleGenerateJobAid}
+                  disabled={generateJobAidMutation.isPending}
+                  className="flex-row items-center gap-x-1 active:opacity-60"
+                >
+                  {generateJobAidMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#208AEF" />
+                  ) : (
+                    <Ionicons name="sparkles-outline" size={14} color="#208AEF" />
+                  )}
+                  <Text className="text-xs font-semibold text-blue-600">
+                    {generateJobAidMutation.isPending ? 'Generating...' : 'Generate'}
+                  </Text>
+                </Pressable>
+              ) : undefined
+            }
+          />
+          {jobAids.length === 0 ? (
+            <Text className="text-sm text-gray-400 italic">No job aids attached</Text>
+          ) : (
+            jobAids.slice(0, 3).map((ja) => <JobAidPreviewRow key={ja.id} item={ja} />)
+          )}
+        </View>
 
         {/* Attached Tasks */}
-        {tasks.length > 0 && (
-          <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
-            <SectionHeader
-              title="Attached Tasks"
-              count={tasks.length}
-              onViewAll={() =>
-                router.push({
-                  pathname: '/(app)/(equipment)/tasks-list',
-                  params: { equipment_id: id, title: equipment.name },
-                })
-              }
-            />
-            {tasks.slice(0, 3).map((t) => (
-              <TaskPreviewRow key={t.id} item={t} />
-            ))}
-          </View>
-        )}
+        <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
+          <SectionHeader
+            title="Attached Tasks"
+            count={tasks.length}
+            onViewAll={() =>
+              router.push({
+                pathname: '/(app)/(equipment)/tasks-list',
+                params: { equipment_id: id, title: equipment.name },
+              })
+            }
+          />
+          {tasks.length === 0 ? (
+            <Text className="text-sm text-gray-400 italic">No tasks attached</Text>
+          ) : (
+            tasks.slice(0, 3).map((t) => <TaskPreviewRow key={t.id} item={t} />)
+          )}
+        </View>
 
         {/* Contributions */}
-        {failureModes.length > 0 && (
-          <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
-            <SectionHeader
-              title="Contributions"
-              count={failureModes.length}
-              onViewAll={() =>
-                router.push({
-                  pathname: '/(app)/(equipment)/contributions-list',
-                  params: { equipment_id: id, title: equipment.name },
-                })
-              }
-            />
-            {failureModes.slice(0, 3).map((fm) => (
-              <FailureModePreviewRow key={fm.id} item={fm} />
-            ))}
-          </View>
-        )}
+        <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-1">
+          <SectionHeader
+            title="Contributions"
+            count={failureModes.length}
+            onViewAll={() =>
+              router.push({
+                pathname: '/(app)/(equipment)/contributions-list',
+                params: { equipment_id: id, title: equipment.name },
+              })
+            }
+          />
+          {failureModes.length === 0 ? (
+            <Text className="text-sm text-gray-400 italic">No contributions recorded</Text>
+          ) : (
+            failureModes.slice(0, 3).map((fm) => <FailureModePreviewRow key={fm.id} item={fm} />)
+          )}
+        </View>
 
         {/* Documents */}
         <View className="bg-white rounded-2xl p-4 shadow-sm gap-y-3">

@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -8,13 +10,22 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
-import { useCreateEquipment } from '@/services/equipment/equipment-queries'
+import {
+  useCreateEquipment,
+  useUpdateEquipment,
+  useRegenerateEquipmentQRCode,
+  useEquipment,
+} from '@/services/equipment/equipment-queries'
 import { useEquipmentTypes } from '@/services/equipment-types/equipment-types-queries'
+import { useIngestDocument } from '@/services/documents/documents-queries'
+import { useAuthStore } from '@/store/auth-store'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import { LocationTreePicker } from '@/components/ui/location-tree-picker'
+import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
 import type { EquipmentStatus } from '@/services/equipment/equipment-types'
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
@@ -81,7 +92,11 @@ export default function CreateEquipmentScreen() {
     prefill_location_id?: string
     prefill_location_name?: string
   }>()
-  const { mutate: createEquipment, isPending, error: apiError } = useCreateEquipment()
+  const company = useAuthStore((s) => s.company)
+  const { mutateAsync: createEquipment, error: apiError } = useCreateEquipment()
+  const { mutateAsync: updateEquipment } = useUpdateEquipment()
+  const { mutateAsync: regenerateQr } = useRegenerateEquipmentQRCode()
+  const { mutateAsync: ingestDocument } = useIngestDocument()
 
   const [typeId, setTypeId] = useState('')
   const [typeName, setTypeName] = useState('')
@@ -91,11 +106,18 @@ export default function CreateEquipmentScreen() {
   const [referenceCode, setReferenceCode] = useState('')
   const [status, setStatus] = useState<EquipmentStatus>('draft')
   const [notes, setNotes] = useState('')
+  const [image, setImage] = useState('')
+  const [showImagePicker, setShowImagePicker] = useState(false)
+  const [documents, setDocuments] = useState<string[]>([])
+  const [showDocumentPicker, setShowDocumentPicker] = useState(false)
+  const [duplicateMatch, setDuplicateMatch] = useState<{ id: string; name: string } | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   const [picker, setPicker] = useState<'type' | 'location' | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const { data: typesData, isLoading: typesLoading } = useEquipmentTypes()
+  const { data: allEquipmentData } = useEquipment({ limit: 1000 })
 
   const typeItems = (typesData?.data ?? []).map((t) => ({ label: t.name, value: t.id }))
 
@@ -109,19 +131,67 @@ export default function CreateEquipmentScreen() {
     return Object.keys(e).length === 0
   }
 
-  function handleSave() {
+  function handleReferenceCodeBlur() {
+    const code = referenceCode.trim().toLowerCase()
+    if (!code) {
+      setDuplicateMatch(null)
+      return
+    }
+    const match = (allEquipmentData?.data ?? []).find(
+      (eq) => eq.reference_code.trim().toLowerCase() === code,
+    )
+    setDuplicateMatch(match ? { id: match.id, name: match.name } : null)
+  }
+
+  async function handleSave() {
     if (!validate()) return
-    createEquipment(
-      {
+    setIsSaving(true)
+    try {
+      const created = await createEquipment({
         equipment_type_id: typeId,
         location_id: locationId,
         name: name.trim(),
         reference_code: referenceCode.trim(),
         notes: notes.trim(),
         status,
-      },
-      { onSuccess: () => router.back() },
-    )
+        image: image || undefined,
+      })
+      const newId = created.data.id
+
+      let qrFailed = false
+      try {
+        await regenerateQr(newId)
+      } catch {
+        qrFailed = true
+      }
+
+      if (documents.length > 0) {
+        try {
+          await updateEquipment({ id: newId, data: { documents } })
+          if (company?.id) {
+            await Promise.all(
+              documents.map((file_url) =>
+                ingestDocument({ file_url, equipment_id: newId, company_id: company.id }).catch(() => null),
+              ),
+            )
+          }
+        } catch {
+          // Equipment was created successfully; document attachment failure is non-fatal.
+        }
+      }
+
+      if (qrFailed) {
+        Alert.alert('Equipment created', 'Equipment created but QR code generation failed. You can retry from the equipment detail screen.')
+      }
+      router.back()
+    } catch (e) {
+      const message =
+        (e as any)?.response?.data?.message ??
+        (e instanceof Error ? e.message : 'Something went wrong')
+      Alert.alert('Create Equipment', message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const apiErrorMsg =
@@ -145,10 +215,11 @@ export default function CreateEquipmentScreen() {
         </View>
         <Pressable
           onPress={handleSave}
-          disabled={isPending}
-          className="px-4 py-1.5 bg-blue-600 rounded-xl active:opacity-70"
+          disabled={isSaving}
+          className="px-4 py-1.5 bg-blue-600 rounded-xl active:opacity-70 flex-row items-center gap-x-1.5"
         >
-          <Text className="text-sm font-semibold text-white">{isPending ? 'Saving…' : 'Save'}</Text>
+          {isSaving && <ActivityIndicator size="small" color="#fff" />}
+          <Text className="text-sm font-semibold text-white">{isSaving ? 'Saving…' : 'Save'}</Text>
         </Pressable>
       </View>
 
@@ -161,6 +232,61 @@ export default function CreateEquipmentScreen() {
             <Text className="text-sm text-red-600">{apiErrorMsg}</Text>
           </View>
         )}
+
+        {/* Image */}
+        <View>
+          <FieldLabel label="Image" />
+          <Pressable
+            onPress={() => setShowImagePicker(true)}
+            className="rounded-xl overflow-hidden border border-dashed border-gray-300 bg-white active:opacity-70"
+            style={{ aspectRatio: 16 / 9 }}
+          >
+            {image ? (
+              <>
+                <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                <View className="absolute top-2 right-2 bg-black/50 rounded-lg px-2 py-1">
+                  <Text className="text-xs text-white font-medium">Change</Text>
+                </View>
+              </>
+            ) : (
+              <View className="flex-1 items-center justify-center gap-y-2">
+                <Ionicons name="camera-outline" size={32} color="#9CA3AF" />
+                <Text className="text-sm text-gray-400">Tap to add equipment image</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
+
+        {/* Documents */}
+        <View>
+          <View className="flex-row items-center justify-between mb-1">
+            <FieldLabel label="Documents" />
+            <Pressable onPress={() => setShowDocumentPicker(true)} className="active:opacity-60">
+              <Text className="text-xs font-semibold text-blue-600">+ Add Document</Text>
+            </Pressable>
+          </View>
+          {documents.length > 0 && (
+            <View className="gap-y-2">
+              {documents.map((url, i) => (
+                <View
+                  key={url}
+                  className="flex-row items-center justify-between bg-white rounded-xl border border-gray-100 px-3 py-2.5"
+                >
+                  <Text className="flex-1 text-sm text-gray-700 mr-2" numberOfLines={1}>
+                    {url.split('/').pop()}
+                  </Text>
+                  <Pressable
+                    onPress={() => setDocuments((prev) => prev.filter((_, idx) => idx !== i))}
+                    hitSlop={8}
+                    className="active:opacity-60"
+                  >
+                    <Text className="text-xs font-semibold text-red-500">Remove</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
 
         {/* Equipment Type */}
         <PickerField
@@ -200,13 +326,39 @@ export default function CreateEquipmentScreen() {
           <FieldLabel label="Reference Code" required />
           <TextInput
             value={referenceCode}
-            onChangeText={(v) => { setReferenceCode(v); setErrors((e) => ({ ...e, referenceCode: '' })) }}
+            onChangeText={(v) => {
+              setReferenceCode(v)
+              setErrors((e) => ({ ...e, referenceCode: '' }))
+              if (duplicateMatch) setDuplicateMatch(null)
+            }}
+            onBlur={handleReferenceCodeBlur}
             placeholder="e.g. EQ-001"
             autoCapitalize="characters"
-            className={`h-12 rounded-xl border px-4 text-sm text-gray-800 bg-white ${errors.referenceCode ? 'border-red-400' : 'border-gray-200'}`}
+            className={`h-12 rounded-xl border px-4 text-sm text-gray-800 bg-white ${
+              errors.referenceCode || duplicateMatch ? 'border-red-400' : 'border-gray-200'
+            }`}
             placeholderTextColor="#9CA3AF"
           />
           <FieldError message={errors.referenceCode} />
+          {duplicateMatch && (
+            <View className="mt-2 rounded-xl bg-amber-50 border border-amber-200 p-3 gap-y-1.5">
+              <Text className="text-xs text-amber-700">
+                Reference code exists! This code is already used by:{' '}
+                <Text className="font-semibold">{duplicateMatch.name}</Text>
+              </Text>
+              <Pressable
+                onPress={() =>
+                  router.replace({
+                    pathname: '/(app)/(equipment)/[id]',
+                    params: { id: duplicateMatch.id },
+                  })
+                }
+                className="active:opacity-60"
+              >
+                <Text className="text-xs font-semibold text-blue-600">View existing equipment</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         {/* Status */}
@@ -272,6 +424,21 @@ export default function CreateEquipmentScreen() {
           setLocationId(id)
           setLocationName(name)
           setErrors((e) => ({ ...e, location: '' }))
+        }}
+      />
+
+      <FileManagerSheet
+        visible={showImagePicker}
+        onClose={() => setShowImagePicker(false)}
+        onSelect={(url) => { setImage(url); setShowImagePicker(false) }}
+      />
+
+      <FileManagerSheet
+        visible={showDocumentPicker}
+        onClose={() => setShowDocumentPicker(false)}
+        onSelect={(url) => {
+          setDocuments((prev) => (prev.includes(url) ? prev : [...prev, url]))
+          setShowDocumentPicker(false)
         }}
       />
     </KeyboardAvoidingView>

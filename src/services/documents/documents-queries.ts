@@ -3,6 +3,7 @@ import chatApiClient from '@/lib/chat-axios'
 import type {
   ChatApiAckResponse,
   DeleteIngestedDocumentInput,
+  DeleteNodeInput,
   IngestDocumentInput,
   IngestStatusParams,
   IngestStatusResponse,
@@ -41,6 +42,15 @@ export function useDeleteIngestedDocument() {
     mutationFn: (input: DeleteIngestedDocumentInput) =>
       chatApiClient
         .delete<ChatApiAckResponse>('/documents/delete', { data: input })
+        .then((r) => r.data),
+  })
+}
+
+export function useDeleteNode() {
+  return useMutation({
+    mutationFn: (input: DeleteNodeInput) =>
+      chatApiClient
+        .delete<ChatApiAckResponse>('/nodes/delete', { data: input })
         .then((r) => r.data),
   })
 }

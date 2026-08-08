@@ -1,24 +1,51 @@
 import { useRef, useState } from 'react'
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
+import { useScanEquipmentQRCode } from '@/services/equipment/equipment-queries'
 
 const VF = 240
 const CORNER = 32
 const BORDER = 3
+
+// Web encodes equipment QR codes as a link to its public detail page
+// (".../equipment/{id}"); pull the id out of that path so we can hit the
+// real scan endpoint (POST /equipment/{id}/scan) instead of guessing at it.
+function extractEquipmentId(value: string): string | null {
+  try {
+    const url = new URL(value)
+    const segments = url.pathname.split('/').filter(Boolean)
+    const equipmentIdx = segments.findIndex((s) => s.toLowerCase() === 'equipment')
+    if (equipmentIdx === -1 || equipmentIdx === segments.length - 1) return null
+    return segments[equipmentIdx + 1]
+  } catch {
+    return null
+  }
+}
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets()
   const [permission, requestPermission] = useCameraPermissions()
   const [scannedUrl, setScannedUrl] = useState<string | null>(null)
   const hasScanned = useRef(false)
+  const scanMutation = useScanEquipmentQRCode()
 
   function handleBarcodeScanned({ data: value }: { data: string }) {
     if (hasScanned.current) return
     hasScanned.current = true
     setScannedUrl(value)
+
+    const equipmentId = extractEquipmentId(value)
+    if (!equipmentId) return
+
+    scanMutation.mutate(equipmentId, {
+      onSuccess: () => {
+        router.replace({ pathname: '/(app)/(equipment)/[id]', params: { id: equipmentId } })
+      },
+      // On failure, fall through to the "Open Link" / "Scan Again" UI already showing.
+    })
   }
 
   function handleScanAgain() {
@@ -88,7 +115,14 @@ export default function ScanScreen() {
             <Text style={styles.hintText}>Point your camera at an equipment QR code</Text>
           )}
 
-          {scannedUrl && (
+          {scannedUrl && scanMutation.isPending && (
+            <View style={styles.resultContainer}>
+              <ActivityIndicator color="#FFFFFF" />
+              <Text style={styles.resultLabel}>Looking up equipment…</Text>
+            </View>
+          )}
+
+          {scannedUrl && !scanMutation.isPending && (
             <View style={styles.resultContainer}>
               <View style={styles.resultIconRow}>
                 <Ionicons name="checkmark-circle" size={20} color="#34D399" />

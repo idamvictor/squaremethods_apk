@@ -5,7 +5,15 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { useTasks } from '@/services/tasks/tasks-queries'
 import type { Task } from '@/services/tasks/tasks-types'
 
+const MAX_BADGES = 5
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 function TaskCard({ item }: { item: Task }) {
+  const visibleJobAids = item.jobAids.slice(0, MAX_BADGES)
+  const overflow = item.jobAids.length - visibleJobAids.length
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/(app)/(tasks)/[id]', params: { id: item.id } })}
@@ -15,12 +23,20 @@ function TaskCard({ item }: { item: Task }) {
         {item.title}
       </Text>
       <View className="flex-row items-center gap-x-2 flex-wrap gap-y-1">
-        <View className="bg-blue-100 rounded-full px-2 py-0.5">
-          <Text className="text-xs font-medium text-blue-700">
-            {item.jobAids.length} job aid{item.jobAids.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
+        {visibleJobAids.map((ja) => (
+          <View key={ja.id} className="bg-blue-100 rounded-full px-2 py-0.5">
+            <Text className="text-xs font-medium text-blue-700" numberOfLines={1}>
+              {ja.title}
+            </Text>
+          </View>
+        ))}
+        {overflow > 0 && (
+          <View className="bg-gray-100 rounded-full px-2 py-0.5">
+            <Text className="text-xs font-medium text-gray-500">+{overflow} more</Text>
+          </View>
+        )}
       </View>
+      <Text className="text-xs text-gray-400 mt-1.5">Created {formatDate(item.createdAt)}</Text>
     </Pressable>
   )
 }
