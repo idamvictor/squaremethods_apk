@@ -12,9 +12,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useDeleteProcedure, useJobAidById } from '@/services/job-aids/job-aids-queries'
 import type { Procedure } from '@/services/job-aids/job-aids-types'
-import { useAuthStore } from '@/store/auth-store'
-
-const ADMIN_ROLES = ['superadmin', 'owner', 'admin']
+import { usePermissions } from '@/lib/permissions'
 
 function StepCard({
   procedure,
@@ -132,8 +130,8 @@ function StepCard({
 export default function StepsScreen() {
   const insets = useSafeAreaInsets()
   const { id, title } = useLocalSearchParams<{ id: string; title: string }>()
-  const { user } = useAuthStore()
-  const isAdmin = ADMIN_ROLES.includes(user?.role ?? '')
+  const { isTechnician } = usePermissions()
+  const isAdmin = !isTechnician
 
   const { data, isLoading } = useJobAidById(id)
   const jobAid = data?.data

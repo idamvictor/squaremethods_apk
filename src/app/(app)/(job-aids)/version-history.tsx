@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -19,7 +20,24 @@ function formatDate(dateStr: string) {
   })
 }
 
-function VersionCard({ version, onPress }: { version: JobAidVersion; onPress: () => void }) {
+function parsePrecautionText(p: string): string {
+  try {
+    const parsed = JSON.parse(p)
+    return parsed?.instruction ?? p
+  } catch {
+    return p
+  }
+}
+
+function VersionCard({
+  version,
+  isLatest,
+  onPress,
+}: {
+  version: JobAidVersion
+  isLatest: boolean
+  onPress: () => void
+}) {
   return (
     <Pressable
       onPress={onPress}
@@ -29,9 +47,16 @@ function VersionCard({ version, onPress }: { version: JobAidVersion; onPress: ()
         <Text className="text-xs font-bold text-blue-700">v{version.version_number}</Text>
       </View>
       <View className="flex-1 gap-y-0.5">
-        <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
-          {version.snapshot.title}
-        </Text>
+        <View className="flex-row items-center gap-x-1.5">
+          <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
+            {version.snapshot.title}
+          </Text>
+          {isLatest && (
+            <View className="bg-green-100 px-1.5 py-0.5 rounded-full">
+              <Text className="text-[10px] font-semibold text-green-700">Latest</Text>
+            </View>
+          )}
+        </View>
         <Text className="text-xs text-gray-400">{formatDate(version.created_at)}</Text>
       </View>
       <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
@@ -96,8 +121,13 @@ export default function VersionHistoryScreen() {
               <Text className="text-sm text-gray-400">No previous versions yet</Text>
             </View>
           ) : (
-            versions.map((v) => (
-              <VersionCard key={v.id} version={v} onPress={() => setPreviewVersion(v)} />
+            versions.map((v, i) => (
+              <VersionCard
+                key={v.id}
+                version={v}
+                isLatest={i === 0}
+                onPress={() => setPreviewVersion(v)}
+              />
             ))
           )}
         </ScrollView>
@@ -128,12 +158,28 @@ export default function VersionHistoryScreen() {
                 <Text className="text-xs text-gray-400">
                   Saved {formatDate(previewVersion.created_at)}
                 </Text>
+                {previewVersion.snapshot.image && (
+                  <Image
+                    source={{ uri: previewVersion.snapshot.image }}
+                    style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12 }}
+                    contentFit="cover"
+                  />
+                )}
                 <Text className="text-lg font-bold text-gray-900">
                   {previewVersion.snapshot.title}
                 </Text>
-                {previewVersion.snapshot.category && (
-                  <Text className="text-xs text-gray-500">{previewVersion.snapshot.category}</Text>
-                )}
+                <View className="flex-row flex-wrap items-center gap-x-3">
+                  {previewVersion.snapshot.category && (
+                    <Text className="text-xs text-gray-500 capitalize">
+                      {previewVersion.snapshot.category}
+                    </Text>
+                  )}
+                  {previewVersion.snapshot.estimated_duration != null && (
+                    <Text className="text-xs text-gray-500">
+                      {previewVersion.snapshot.estimated_duration} min
+                    </Text>
+                  )}
+                </View>
                 <Text className="text-sm text-gray-700 leading-5">
                   {previewVersion.snapshot.instruction}
                 </Text>
@@ -150,9 +196,18 @@ export default function VersionHistoryScreen() {
                           <View className="w-5 h-5 rounded-full bg-gray-700 items-center justify-center mt-0.5">
                             <Text className="text-[10px] font-bold text-white">{p.step}</Text>
                           </View>
-                          <View className="flex-1">
+                          <View className="flex-1 gap-y-1">
                             <Text className="text-sm font-medium text-gray-900">{p.title}</Text>
                             <Text className="text-xs text-gray-500">{p.instruction}</Text>
+                            {p.precautions?.length > 0 && (
+                              <View className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-0.5">
+                                {p.precautions.map((pr, pi) => (
+                                  <Text key={pi} className="text-xs text-amber-700">
+                                    ⚠ {parsePrecautionText(pr)}
+                                  </Text>
+                                ))}
+                              </View>
+                            )}
                           </View>
                         </View>
                       ))}

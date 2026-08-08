@@ -11,15 +11,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useJobAidById } from '@/services/job-aids/job-aids-queries'
-import { useAuthStore } from '@/store/auth-store'
-
-const ADMIN_ROLES = ['superadmin', 'owner', 'admin']
+import { usePermissions } from '@/lib/permissions'
 
 export default function StepViewScreen() {
   const insets = useSafeAreaInsets()
   const { id, step_index } = useLocalSearchParams<{ id: string; step_index: string }>()
-  const { user } = useAuthStore()
-  const isAdmin = ADMIN_ROLES.includes(user?.role ?? '')
+  const { isTechnician } = usePermissions()
+  const isAdmin = !isTechnician
 
   const [index, setIndex] = useState(Number(step_index ?? 0))
   const scrollRef = useRef<ScrollView>(null)

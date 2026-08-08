@@ -17,8 +17,8 @@ import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
 import type { JobAidCategory } from '@/services/job-aids/job-aids-types'
 
-const CATEGORIES: JobAidCategory[] = ['Maintenance', 'Safety', 'Operations']
-const CATEGORY_ITEMS = CATEGORIES.map((c) => ({ label: c, value: c }))
+const CATEGORIES: JobAidCategory[] = ['maintenance', 'safety', 'operations']
+const CATEGORY_ITEMS = CATEGORIES.map((c) => ({ label: c[0].toUpperCase() + c.slice(1), value: c }))
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
@@ -58,7 +58,7 @@ function PickerField({
           error ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'
         }`}
       >
-        <Text className={`text-sm ${value ? 'text-gray-800' : 'text-gray-400'}`} numberOfLines={1}>
+        <Text className={`text-sm capitalize ${value ? 'text-gray-800' : 'text-gray-400'}`} numberOfLines={1}>
           {value || placeholder}
         </Text>
         <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
@@ -97,6 +97,8 @@ export default function CreateJobAidScreen() {
     if (!title.trim()) e.title = 'Title is required'
     if (!category) e.category = 'Category is required'
     if (!instruction.trim()) e.instruction = 'Instructions are required'
+    if (!image) e.image = 'Cover image is required'
+    if (selectedEquipmentIds.length === 0) e.equipment = 'At least one equipment is required'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -169,10 +171,10 @@ export default function CreateJobAidScreen() {
 
         {/* Cover Image */}
         <View>
-          <FieldLabel label="Cover Image" />
+          <FieldLabel label="Cover Image" required />
           <Pressable
             onPress={() => setPicker('image')}
-            className="rounded-xl overflow-hidden border border-dashed border-gray-300 bg-white active:opacity-70"
+            className={`rounded-xl overflow-hidden border border-dashed bg-white active:opacity-70 ${errors.image ? 'border-red-400' : 'border-gray-300'}`}
             style={{ aspectRatio: 16 / 9 }}
           >
             {image ? (
@@ -193,6 +195,7 @@ export default function CreateJobAidScreen() {
               </View>
             )}
           </Pressable>
+          <FieldError message={errors.image} />
         </View>
 
         {/* Title */}
@@ -261,7 +264,7 @@ export default function CreateJobAidScreen() {
         {/* Assign Equipment */}
         <View>
           <View className="flex-row items-center justify-between mb-2">
-            <FieldLabel label="Assigned Equipment" />
+            <FieldLabel label="Assigned Equipment" required />
             <Pressable
               onPress={() => {
                 setEquipmentSearch('')
@@ -292,6 +295,7 @@ export default function CreateJobAidScreen() {
           ) : (
             <Text className="text-sm text-gray-400 italic">No equipment assigned</Text>
           )}
+          <FieldError message={errors.equipment} />
         </View>
       </KeyboardAwareScrollView>
 
@@ -325,6 +329,7 @@ export default function CreateJobAidScreen() {
             const found = equipmentItems.find((e) => e.value === id)
             setSelectedEquipmentIds((prev) => [...prev, id])
             setSelectedEquipmentNames((prev) => [...prev, found?.label ?? id])
+            setErrors((e) => ({ ...e, equipment: '' }))
           }
           setPicker(null)
         }}
@@ -335,6 +340,7 @@ export default function CreateJobAidScreen() {
         onClose={() => setPicker(null)}
         onSelect={(url) => {
           setImage(url)
+          setErrors((e) => ({ ...e, image: '' }))
           setPicker(null)
         }}
       />

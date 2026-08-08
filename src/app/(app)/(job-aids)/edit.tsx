@@ -17,8 +17,8 @@ import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
 import type { JobAidCategory, JobAidStatus } from '@/services/job-aids/job-aids-types'
 
-const CATEGORIES: JobAidCategory[] = ['Maintenance', 'Safety', 'Operations']
-const CATEGORY_ITEMS = CATEGORIES.map((c) => ({ label: c, value: c }))
+const CATEGORIES: JobAidCategory[] = ['maintenance', 'safety', 'operations']
+const CATEGORY_ITEMS = CATEGORIES.map((c) => ({ label: c[0].toUpperCase() + c.slice(1), value: c }))
 
 const STATUS_BADGE_STYLE: Record<JobAidStatus, { bg: string; dot: string; text: string; label: string }> = {
   draft: { bg: 'bg-amber-100', dot: 'bg-amber-400', text: 'text-amber-700', label: 'Draft' },
@@ -64,7 +64,7 @@ function PickerField({
           error ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'
         }`}
       >
-        <Text className={`text-sm ${value ? 'text-gray-800' : 'text-gray-400'}`} numberOfLines={1}>
+        <Text className={`text-sm capitalize ${value ? 'text-gray-800' : 'text-gray-400'}`} numberOfLines={1}>
           {value || placeholder}
         </Text>
         <Ionicons name="chevron-down" size={16} color="#9CA3AF" />

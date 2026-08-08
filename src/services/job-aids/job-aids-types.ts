@@ -1,5 +1,5 @@
 export type JobAidStatus = 'draft' | 'pending_approval' | 'published'
-export type JobAidCategory = 'Maintenance' | 'Safety' | 'Operations'
+export type JobAidCategory = 'maintenance' | 'safety' | 'operations'
 
 export interface JobAidCreator {
   id: string

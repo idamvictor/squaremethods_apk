@@ -21,7 +21,10 @@ import {
   useJobAids,
 } from '@/services/job-aids/job-aids-queries'
 import type { JobAid } from '@/services/job-aids/job-aids-types'
+import { useEquipment } from '@/services/equipment/equipment-queries'
+import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import { usePermissions } from '@/lib/permissions'
+import { useJobAidApprovalActions } from '@/hooks/use-job-aid-approval-actions'
 
 const LIMIT = 20
 
@@ -31,7 +34,7 @@ function CategoryBadge({ category }: { category: string | null }) {
   if (!category) return null
   return (
     <View className="bg-blue-100 rounded-full px-2 py-0.5">
-      <Text className="text-xs font-medium text-blue-700" numberOfLines={1}>
+      <Text className="text-xs font-medium text-blue-700 capitalize" numberOfLines={1}>
         {category}
       </Text>
     </View>
@@ -45,8 +48,9 @@ function JobAidCard({
 }: {
   item: JobAid
   isAdmin: boolean
-  onLongPress: () => void
+  onLongPress: (actions: ReturnType<typeof useJobAidApprovalActions>) => void
 }) {
+  const approvalActions = useJobAidApprovalActions(item)
   const dotColor =
     item.status === 'published'
       ? 'bg-green-500'
@@ -58,7 +62,7 @@ function JobAidCard({
       onPress={() =>
         router.push({ pathname: '/(app)/(job-aids)/[id]', params: { id: item.id } })
       }
-      onLongPress={isAdmin ? onLongPress : undefined}
+      onLongPress={isAdmin ? () => onLongPress(approvalActions) : undefined}
       className="bg-white rounded-2xl overflow-hidden shadow-sm mb-3 active:opacity-80"
     >
       {/* Cover image */}
@@ -93,12 +97,18 @@ function JobAidCard({
               ? `By ${item.creator.first_name} ${item.creator.last_name}`
               : 'Unknown author'}
           </Text>
-          {item.estimated_duration != null && (
+          <View className="flex-row items-center gap-x-3">
+            {item.estimated_duration != null && (
+              <View className="flex-row items-center gap-x-1">
+                <Ionicons name="time-outline" size={12} color="#9CA3AF" />
+                <Text className="text-xs text-gray-400">{item.estimated_duration} min</Text>
+              </View>
+            )}
             <View className="flex-row items-center gap-x-1">
-              <Ionicons name="time-outline" size={12} color="#9CA3AF" />
-              <Text className="text-xs text-gray-400">{item.estimated_duration} min</Text>
+              <Ionicons name="eye-outline" size={12} color="#9CA3AF" />
+              <Text className="text-xs text-gray-400">{item.view_count}</Text>
             </View>
-          )}
+          </View>
         </View>
       </View>
     </Pressable>
@@ -163,11 +173,15 @@ function DuplicateModal({
 
 export default function JobAidsScreen() {
   const insets = useSafeAreaInsets()
-  const { isAdmin } = usePermissions()
+  const { isTechnician } = usePermissions()
+  const isAdmin = !isTechnician
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [equipmentFilter, setEquipmentFilter] = useState<{ id: string; name: string } | null>(null)
+  const [equipmentPickerVisible, setEquipmentPickerVisible] = useState(false)
+  const [equipmentSearch, setEquipmentSearch] = useState('')
   const [page, setPage] = useState(1)
   const [allItems, setAllItems] = useState<JobAid[]>([])
   const [duplicateTarget, setDuplicateTarget] = useState<JobAid | null>(null)
@@ -175,12 +189,17 @@ export default function JobAidsScreen() {
 
   const { mutate: deleteJobAid } = useDeleteJobAid()
   const { mutate: duplicateJobAid, isPending: isDuplicating } = useDuplicateJobAid()
+  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment(
+    equipmentSearch ? { search: equipmentSearch } : undefined,
+  )
+  const equipmentItems = (equipmentData?.data ?? []).map((e) => ({ label: e.name, value: e.id }))
 
   const queryParams = {
     page,
     limit: LIMIT,
     search: debouncedSearch || undefined,
     status: statusFilter === 'all' ? undefined : statusFilter,
+    equipment_id: equipmentFilter?.id,
   }
 
   const { data, isLoading, refetch, isFetching } = useJobAids(queryParams)
@@ -207,8 +226,48 @@ export default function JobAidsScreen() {
     setAllItems([])
   }
 
-  function handleLongPress(item: JobAid) {
+  function handleEquipmentFilter(equipment: { id: string; name: string } | null) {
+    setEquipmentFilter(equipment)
+    setPage(1)
+    setAllItems([])
+  }
+
+  function handleLongPress(item: JobAid, actions: ReturnType<typeof useJobAidApprovalActions>) {
+    const workflowOptions: { text: string; onPress: () => void }[] = []
+    if (actions.canSubmitForApproval) {
+      workflowOptions.push({ text: 'Submit for Approval', onPress: () => actions.submitForApproval() })
+    }
+    if (actions.canApprove) {
+      workflowOptions.push({
+        text: 'Approve',
+        onPress: () =>
+          Alert.alert(
+            'Approve this job aid?',
+            `This publishes the job aid and notifies ${item.creator?.first_name ?? 'the creator'}.`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Approve', onPress: () => actions.approve() },
+            ],
+          ),
+      })
+    }
+    if (actions.canUnpublish) {
+      workflowOptions.push({
+        text: 'Unpublish',
+        onPress: () =>
+          Alert.alert(
+            'Revert to draft?',
+            'It will no longer be visible to technicians and will need to go through approval again before it can be published.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Unpublish', style: 'destructive', onPress: () => actions.unpublish() },
+            ],
+          ),
+      })
+    }
+
     Alert.alert(item.title, undefined, [
+      ...workflowOptions,
       {
         text: 'Edit',
         onPress: () =>
@@ -322,8 +381,44 @@ export default function JobAidsScreen() {
               </Text>
             </Pressable>
           ))}
+          <Pressable
+            onPress={() => {
+              setEquipmentSearch('')
+              setEquipmentPickerVisible(true)
+            }}
+            className={`flex-row items-center gap-x-1 px-4 py-1.5 rounded-full border ${
+              equipmentFilter ? 'bg-blue-600 border-blue-600' : 'border-gray-200 bg-white'
+            }`}
+          >
+            <Text
+              className={`text-xs font-semibold ${equipmentFilter ? 'text-white' : 'text-gray-600'}`}
+              numberOfLines={1}
+            >
+              {equipmentFilter ? equipmentFilter.name : 'Equipment'}
+            </Text>
+            {equipmentFilter && (
+              <Pressable onPress={() => handleEquipmentFilter(null)} hitSlop={6}>
+                <Ionicons name="close" size={12} color="#FFFFFF" />
+              </Pressable>
+            )}
+          </Pressable>
         </ScrollView>
       </View>
+
+      <BottomSheetPicker
+        visible={equipmentPickerVisible}
+        onClose={() => setEquipmentPickerVisible(false)}
+        title="Filter by Equipment"
+        items={equipmentItems}
+        selected={equipmentFilter?.id ?? null}
+        searchable
+        loading={equipmentLoading}
+        onSelect={(id) => {
+          const found = equipmentItems.find((e) => e.value === id)
+          handleEquipmentFilter(found ? { id, name: found.label } : null)
+          setEquipmentPickerVisible(false)
+        }}
+      />
 
       {/* List */}
       <FlatList
@@ -364,7 +459,11 @@ export default function JobAidsScreen() {
           ) : null
         }
         renderItem={({ item }) => (
-          <JobAidCard item={item} isAdmin={isAdmin} onLongPress={() => handleLongPress(item)} />
+          <JobAidCard
+            item={item}
+            isAdmin={isAdmin}
+            onLongPress={(actions) => handleLongPress(item, actions)}
+          />
         )}
       />
 

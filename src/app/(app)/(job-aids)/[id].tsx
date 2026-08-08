@@ -11,6 +11,7 @@ import {
 import { Image } from 'expo-image'
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
+import { File, Paths } from 'expo-file-system'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -23,6 +24,15 @@ import type { JobAid, JobAidStatus, Procedure } from '@/services/job-aids/job-ai
 import { useAuthStore } from '@/store/auth-store'
 import { usePermissions } from '@/lib/permissions'
 import { useJobAidApprovalActions } from '@/hooks/use-job-aid-approval-actions'
+
+function formatDate(dateStr: string | null | undefined) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
 
 function buildJobAidHtml(jobAid: JobAid) {
   const sortedProcedures = [...(jobAid.procedures ?? [])].sort((a, b) => a.step - b.step)
@@ -44,14 +54,27 @@ function buildJobAidHtml(jobAid: JobAid) {
     )
     .join('')
 
+  const authorName = jobAid.creator
+    ? `${jobAid.creator.first_name} ${jobAid.creator.last_name}`
+    : null
+  const equipmentNames = (jobAid.assignedEquipments ?? []).map((e) => e.name)
+
   return `
     <html>
       <body style="font-family:-apple-system,Helvetica,Arial,sans-serif;padding:24px;">
         ${jobAid.image ? `<img src="${jobAid.image}" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;margin-bottom:16px;" />` : ''}
         <h1 style="font-size:22px;margin:0 0 4px;">${jobAid.title}</h1>
-        <p style="font-size:12px;color:#6B7280;margin:0 0 16px;">
+        <p style="font-size:12px;color:#6B7280;margin:0 0 8px;">
           ${jobAid.category ?? ''}${jobAid.estimated_duration != null ? ` · ${jobAid.estimated_duration} min` : ''}
         </p>
+        <p style="font-size:12px;color:#6B7280;margin:0 0 4px;">
+          ${authorName ? `Author: ${authorName}` : ''}${authorName ? ' · ' : ''}Status: ${STATUS_STYLE[jobAid.status].label} · Created: ${formatDate(jobAid.createdAt)}
+        </p>
+        ${
+          equipmentNames.length
+            ? `<p style="font-size:12px;color:#6B7280;margin:0 0 16px;">Assigned Equipment: ${equipmentNames.join(', ')}</p>`
+            : '<div style="margin-bottom:16px;"></div>'
+        }
         <p style="font-size:14px;color:#374151;margin:0 0 24px;">${jobAid.instruction ?? ''}</p>
         <h2 style="font-size:16px;margin:0 0 12px;">Step-by-Step Procedures</h2>
         ${proceduresHtml}
@@ -165,7 +188,8 @@ export default function JobAidDetailScreen() {
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { user } = useAuthStore()
-  const { isAdmin } = usePermissions()
+  const { isTechnician } = usePermissions()
+  const isAdmin = !isTechnician
 
   const [expanded, setExpanded] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
@@ -213,7 +237,9 @@ export default function JobAidDetailScreen() {
 
   function handleShare() {
     if (!jobAid) return
-    Clipboard.setString(`/job-aids/${jobAid.slug}`)
+    const webBaseUrl = process.env.EXPO_PUBLIC_WEB_BASE_URL
+    const path = `/job-aids/${jobAid.id}`
+    Clipboard.setString(webBaseUrl ? `${webBaseUrl}${path}` : path)
     Alert.alert('Link copied', 'The job aid link has been copied to clipboard.')
   }
 
@@ -222,8 +248,12 @@ export default function JobAidDetailScreen() {
     setIsExporting(true)
     try {
       const html = buildJobAidHtml(jobAid)
-      const { uri } = await Print.printToFileAsync({ html })
-      await Sharing.shareAsync(uri)
+      const { base64 } = await Print.printToFileAsync({ html, base64: true })
+      if (!base64) throw new Error('Failed to generate PDF')
+      const shareableFile = new File(Paths.cache, `${jobAid.id}.pdf`)
+      shareableFile.create({ overwrite: true })
+      shareableFile.write(base64, { encoding: 'base64' })
+      await Sharing.shareAsync(shareableFile.uri)
     } catch (e) {
       Alert.alert('Export PDF', e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -357,11 +387,11 @@ export default function JobAidDetailScreen() {
         <View className="gap-y-2">
           <Text className="text-xl font-bold text-gray-900">{jobAid.title}</Text>
           <View className="flex-row flex-wrap gap-2">
-            {jobAid.category && (
-              <View className="bg-blue-100 px-3 py-1 rounded-full">
-                <Text className="text-xs font-semibold text-blue-700">{jobAid.category}</Text>
-              </View>
-            )}
+            <View className="bg-blue-100 px-3 py-1 rounded-full">
+              <Text className="text-xs font-semibold text-blue-700 capitalize">
+                {jobAid.category || 'General'}
+              </Text>
+            </View>
             <StatusBadge status={jobAid.status} />
           </View>
           {isAdmin && <ApprovalActionsBar jobAid={jobAid} />}
@@ -379,6 +409,12 @@ export default function JobAidDetailScreen() {
               <Ionicons name="time-outline" size={12} color="#9CA3AF" />
               <Text className="text-xs text-gray-500">{jobAid.estimated_duration} min</Text>
             </View>
+          )}
+          <Text className="text-xs text-gray-500">Updated {formatDate(jobAid.updatedAt)}</Text>
+          {jobAid.approver && (
+            <Text className="text-xs text-gray-500">
+              Approved by {jobAid.approver.first_name} {jobAid.approver.last_name}
+            </Text>
           )}
         </View>
 
