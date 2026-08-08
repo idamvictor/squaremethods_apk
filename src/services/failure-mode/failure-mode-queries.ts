@@ -61,6 +61,8 @@ export function useCreateFailureMode() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['failure-modes'] })
+      qc.invalidateQueries({ queryKey: ['failure-modes-pending-approval'] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
     },
   })
 }
@@ -76,6 +78,7 @@ export function useUpdateFailureMode() {
       qc.invalidateQueries({ queryKey: ['failure-modes', failureModeId] })
       qc.invalidateQueries({ queryKey: ['failure-modes'] })
       qc.invalidateQueries({ queryKey: ['failure-modes-pending-approval'] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
     },
   })
 }
@@ -89,6 +92,8 @@ export function useDeleteFailureMode() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['failure-modes'] })
+      qc.invalidateQueries({ queryKey: ['failure-modes-pending-approval'] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
     },
   })
 }

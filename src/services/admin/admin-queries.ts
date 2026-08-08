@@ -211,6 +211,9 @@ export function useSyncEquipmentTypeDefaults() {
       apiClient
         .post<SyncEquipmentTypeDefaultsResponse>('/admin/equipment-type-defaults/sync', input)
         .then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [EQUIP_KEY] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [EQUIP_KEY] })
+      qc.invalidateQueries({ queryKey: ['equipment-types'] })
+    },
   })
 }

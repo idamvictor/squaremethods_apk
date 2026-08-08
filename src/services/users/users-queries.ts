@@ -104,9 +104,8 @@ export function useUpdateUser() {
       const res = await apiClient.put(`/users/${userId}`, payload)
       return res.data
     },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: [USERS_KEY, variables.userId] })
-      qc.invalidateQueries({ queryKey: [USERS_KEY, 'list'] })
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [USERS_KEY] })
     },
   })
 }
@@ -118,9 +117,8 @@ export function useActivateUser() {
       const res = await apiClient.put(`/users/${id}/activate`)
       return res.data
     },
-    onSuccess: (_data, id) => {
-      qc.invalidateQueries({ queryKey: [USERS_KEY, id] })
-      qc.invalidateQueries({ queryKey: [USERS_KEY, 'list'] })
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [USERS_KEY] })
     },
   })
 }
@@ -132,9 +130,8 @@ export function useDeactivateUser() {
       const res = await apiClient.put(`/users/${id}/deactivate`)
       return res.data
     },
-    onSuccess: (_data, id) => {
-      qc.invalidateQueries({ queryKey: [USERS_KEY, id] })
-      qc.invalidateQueries({ queryKey: [USERS_KEY, 'list'] })
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [USERS_KEY] })
     },
   })
 }
@@ -147,16 +144,20 @@ export function useAdminDeleteUser() {
       return res.data
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [USERS_KEY, 'list'] })
+      qc.invalidateQueries({ queryKey: [USERS_KEY] })
     },
   })
 }
 
 export function useInviteUsers() {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: async (payload: InviteUsersInput) => {
       const res = await apiClient.post('/invitations/send-invites', payload)
       return res.data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['invitations'] })
     },
   })
 }

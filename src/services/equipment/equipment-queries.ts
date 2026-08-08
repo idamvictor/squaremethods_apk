@@ -60,7 +60,10 @@ export function useCreateEquipment() {
   return useMutation({
     mutationFn: (input: CreateEquipmentInput) =>
       apiClient.post<GetEquipmentResponse>('/equipment', input).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [EQ_KEY] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [EQ_KEY] })
+      qc.invalidateQueries({ queryKey: ['locations'] })
+    },
   })
 }
 
@@ -72,6 +75,7 @@ export function useUpdateEquipment() {
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: [EQ_KEY] })
       qc.invalidateQueries({ queryKey: [EQ_KEY, id] })
+      qc.invalidateQueries({ queryKey: ['locations'] })
     },
   })
 }
@@ -133,6 +137,9 @@ export function useDeleteEquipment() {
   return useMutation({
     mutationFn: (id: string) =>
       apiClient.delete<DeleteEquipmentResponse>(`/equipment/${id}`).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [EQ_KEY] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [EQ_KEY] })
+      qc.invalidateQueries({ queryKey: ['locations'] })
+    },
   })
 }

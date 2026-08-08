@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -18,15 +18,36 @@ import {
   useCreateEquipment,
   useUpdateEquipment,
   useRegenerateEquipmentQRCode,
-  useEquipment,
 } from '@/services/equipment/equipment-queries'
 import { useEquipmentTypes } from '@/services/equipment-types/equipment-types-queries'
 import { useIngestDocument } from '@/services/documents/documents-queries'
+import { useLocationsWithEquipment } from '@/services/locations/locations-queries'
 import { useAuthStore } from '@/store/auth-store'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import { LocationTreePicker } from '@/components/ui/location-tree-picker'
 import { FileManagerSheet } from '@/components/ui/file-manager-sheet'
 import type { EquipmentStatus } from '@/services/equipment/equipment-types'
+import type { Location } from '@/services/locations/locations-types'
+
+// Mirrors web's findEquipmentByReference: walk the same location/equipment
+// tree the equipment list screen already loads, so this check is warm and
+// matches what's actually visible in the hierarchy.
+function findEquipmentByReference(
+  nodes: Location[],
+  refCode: string,
+): { id: string; name: string } | null {
+  for (const node of nodes) {
+    const match = node.equipment?.find(
+      (eq) => eq.reference_code.trim().toLowerCase() === refCode,
+    )
+    if (match) return { id: match.id, name: match.name }
+    if (node.children?.length) {
+      const found = findEquipmentByReference(node.children, refCode)
+      if (found) return found
+    }
+  }
+  return null
+}
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
@@ -117,7 +138,7 @@ export default function CreateEquipmentScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const { data: typesData, isLoading: typesLoading } = useEquipmentTypes()
-  const { data: allEquipmentData } = useEquipment({ limit: 1000 })
+  const { data: hierarchyData } = useLocationsWithEquipment()
 
   const typeItems = (typesData?.data ?? []).map((t) => ({ label: t.name, value: t.id }))
 
@@ -137,10 +158,7 @@ export default function CreateEquipmentScreen() {
       setDuplicateMatch(null)
       return
     }
-    const match = (allEquipmentData?.data ?? []).find(
-      (eq) => eq.reference_code.trim().toLowerCase() === code,
-    )
-    setDuplicateMatch(match ? { id: match.id, name: match.name } : null)
+    setDuplicateMatch(findEquipmentByReference(hierarchyData?.data ?? [], code))
   }
 
   async function handleSave() {

@@ -56,7 +56,10 @@ export function useCreateJobAid() {
   return useMutation({
     mutationFn: (input: CreateJobAidInput) =>
       apiClient.post<JobAidResponse>('/job-aids', input).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
+    },
   })
 }
 
@@ -68,6 +71,7 @@ export function useUpdateJobAid() {
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
       qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY, id] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
     },
   })
 }
@@ -77,7 +81,10 @@ export function useDeleteJobAid() {
   return useMutation({
     mutationFn: (id: string) =>
       apiClient.delete(`/job-aids/${id}`).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
+    },
   })
 }
 
@@ -89,6 +96,7 @@ export function useSubmitJobAidForApproval() {
     onSuccess: (_, id) => {
       qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
       qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY, id] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
     },
   })
 }
@@ -101,6 +109,7 @@ export function usePublishJobAid() {
     onSuccess: (_, id) => {
       qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
       qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY, id] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
     },
   })
 }
@@ -113,6 +122,7 @@ export function useUnpublishJobAid() {
     onSuccess: (_, id) => {
       qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
       qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY, id] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
     },
   })
 }
@@ -124,7 +134,10 @@ export function useDuplicateJobAid() {
       apiClient
         .post<JobAidResponse>(`/job-aids/${id}/duplicate`, { title })
         .then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
+    },
   })
 }
 
@@ -135,7 +148,10 @@ export function useGenerateJobAid() {
       chatApiClient
         .post<GeneratedJobAidResponse>('/job-aids/generate', input)
         .then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [JOB_AIDS_KEY] })
+      qc.invalidateQueries({ queryKey: ['equipment'] })
+    },
   })
 }
 

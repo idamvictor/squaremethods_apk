@@ -32,10 +32,14 @@ export function useRevokeInvitation() {
 }
 
 export function useGenerateInvitationLink() {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: async (payload: GenerateLinkInput) => {
       const res = await apiClient.post<GenerateLinkResponse>('/invitations/generate-link', payload)
       return res.data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [INVITATIONS_KEY] })
     },
   })
 }

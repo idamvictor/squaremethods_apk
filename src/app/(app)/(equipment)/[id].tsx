@@ -4,6 +4,7 @@ import {
   Alert,
   Linking,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -229,13 +230,23 @@ export default function EquipmentDetailScreen() {
   const [isGeneratingPm, setIsGeneratingPm] = useState(false)
   const [isImportingPm, setIsImportingPm] = useState(false)
 
-  const { data: equipmentData, isLoading, error } = useEquipmentById(id)
+  const { data: equipmentData, isLoading, error, refetch: refetchEquipment } = useEquipmentById(id)
   const { mutate: deleteEquipment, isPending: isDeleting } = useDeleteEquipment()
   const { mutate: updateEquipment, isPending: isUpdatingDocuments } = useUpdateEquipment()
 
   const equipment = equipmentData?.data
-  const { data: tasksData } = useTasks(id ? { equipment_id: id } : undefined)
+  const { data: tasksData, refetch: refetchTasks } = useTasks(id ? { equipment_id: id } : undefined)
   const tasks = tasksData?.data ?? []
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  async function handleRefresh() {
+    setIsRefreshing(true)
+    try {
+      await Promise.all([refetchEquipment(), refetchTasks()])
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   const { data: ingestStatusData } = useIngestStatus(
     id && company?.id ? { equipment_id: id, company_id: company.id } : undefined
@@ -512,6 +523,9 @@ export default function EquipmentDetailScreen() {
 
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 24 }}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#208AEF" />
+        }
       >
         {/* Hero image */}
         <View
