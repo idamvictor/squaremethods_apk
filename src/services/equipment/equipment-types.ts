@@ -115,3 +115,14 @@ export interface EquipmentQRCodeResponse {
   message?: string
   data: EquipmentQRCode
 }
+
+export interface ImportEquipmentHierarchyInput {
+  file: { uri: string; name: string; type: string }
+  company_id: string
+  created_by: string
+}
+
+export interface ImportEquipmentHierarchyResponse {
+  message?: string
+  [key: string]: unknown
+}

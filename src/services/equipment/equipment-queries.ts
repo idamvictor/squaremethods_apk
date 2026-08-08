@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/lib/axios'
+import chatApiClient from '@/lib/chat-axios'
 import type {
   CreateEquipmentInput,
   DeleteEquipmentResponse,
@@ -8,6 +9,8 @@ import type {
   EquipmentResponse,
   EquipmentStatsResponse,
   GetEquipmentResponse,
+  ImportEquipmentHierarchyInput,
+  ImportEquipmentHierarchyResponse,
   UpdateEquipmentInput,
 } from './equipment-types'
 
@@ -97,6 +100,27 @@ export function useEquipmentByScan() {
   return useMutation({
     mutationFn: (code: string) =>
       apiClient.get<GetEquipmentResponse>(`/equipment/scan?code=${encodeURIComponent(code)}`).then((r) => r.data),
+  })
+}
+
+export function useImportEquipmentHierarchy() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ImportEquipmentHierarchyInput) => {
+      const formData = new FormData()
+      formData.append('file', input.file as unknown as Blob)
+      formData.append('company_id', input.company_id)
+      formData.append('created_by', input.created_by)
+      return chatApiClient
+        .post<ImportEquipmentHierarchyResponse>('/equipment/master-data/import', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .then((r) => r.data)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [EQ_KEY] })
+      qc.invalidateQueries({ queryKey: ['locations'] })
+    },
   })
 }
 

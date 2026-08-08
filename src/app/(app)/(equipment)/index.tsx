@@ -15,8 +15,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
+import * as DocumentPicker from 'expo-document-picker'
 import { useAuthStore } from '@/store/auth-store'
-import { useDeleteEquipment } from '@/services/equipment/equipment-queries'
+import { useDeleteEquipment, useImportEquipmentHierarchy } from '@/services/equipment/equipment-queries'
 import {
   useLocationsWithEquipment,
   useCreateLocation,
@@ -398,17 +399,20 @@ type LocationModalState = {
 export default function EquipmentScreen() {
   const insets = useSafeAreaInsets()
   const user = useAuthStore((s) => s.user)
+  const company = useAuthStore((s) => s.company)
   const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [locationModal, setLocationModal] = useState<LocationModalState>(null)
+  const [isImportingHierarchy, setIsImportingHierarchy] = useState(false)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { mutate: deleteEquipment } = useDeleteEquipment()
   const { mutate: createLocation, isPending: isCreating } = useCreateLocation()
   const { mutate: updateLocation, isPending: isUpdating } = useUpdateLocation()
+  const importHierarchyMutation = useImportEquipmentHierarchy()
   const { mutate: deleteLocation } = useDeleteLocation()
 
   const { data, isLoading, isFetching, refetch } = useLocationsWithEquipment()
@@ -502,6 +506,39 @@ export default function EquipmentScreen() {
     setLocationModal({ mode: 'add', parentId: undefined, title: 'Add Root Location' })
   }
 
+  async function handleImportHierarchy() {
+    if (!company?.id || !user?.id) return
+    const result = await DocumentPicker.getDocumentAsync({
+      type: [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+        'text/csv',
+      ],
+      copyToCacheDirectory: true,
+    })
+    if (result.canceled || !result.assets?.[0]) return
+    const asset = result.assets[0]
+
+    setIsImportingHierarchy(true)
+    try {
+      await importHierarchyMutation.mutateAsync({
+        file: {
+          uri: asset.uri,
+          name: asset.name,
+          type: asset.mimeType ?? 'application/octet-stream',
+        },
+        company_id: company.id,
+        created_by: user.id,
+      })
+      Alert.alert('Import', 'Equipment hierarchy imported successfully.')
+      refetch()
+    } catch (e) {
+      Alert.alert('Import', e instanceof Error ? e.message : 'Failed to import equipment hierarchy')
+    } finally {
+      setIsImportingHierarchy(false)
+    }
+  }
+
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
@@ -512,12 +549,28 @@ export default function EquipmentScreen() {
         <View className="flex-row items-center justify-between mb-3">
           <Text className="text-xl font-bold text-gray-900">Equipment</Text>
           {isAdmin && (
-            <Pressable
-              onPress={handleHeaderAdd}
-              className="w-8 h-8 items-center justify-center rounded-full bg-blue-600 active:opacity-70"
-            >
-              <Ionicons name="add" size={20} color="#FFFFFF" />
-            </Pressable>
+            <View className="flex-row items-center gap-x-2">
+              <Pressable
+                onPress={handleImportHierarchy}
+                disabled={isImportingHierarchy}
+                className="flex-row items-center gap-x-1.5 px-3 h-8 rounded-full border border-gray-200 bg-white active:opacity-70"
+              >
+                {isImportingHierarchy ? (
+                  <ActivityIndicator size="small" color="#4B5563" />
+                ) : (
+                  <Ionicons name="cloud-upload-outline" size={15} color="#4B5563" />
+                )}
+                <Text className="text-xs font-semibold text-gray-700">
+                  {isImportingHierarchy ? 'Importing…' : 'Import'}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleHeaderAdd}
+                className="w-8 h-8 items-center justify-center rounded-full bg-blue-600 active:opacity-70"
+              >
+                <Ionicons name="add" size={20} color="#FFFFFF" />
+              </Pressable>
+            </View>
           )}
         </View>
 
