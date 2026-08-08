@@ -70,6 +70,7 @@ export interface FailureModesQueryParams {
   search?: string
   status?: FailureModeStatus
   equipment_id?: string
+  reported_by?: string
 }
 
 export interface CreateFailureModeInput {

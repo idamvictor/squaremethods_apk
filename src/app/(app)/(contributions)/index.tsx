@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
 import {
   useFailureModes,
@@ -21,6 +21,16 @@ import {
 import type { ContributionType, FailureMode, FailureModeStatus } from '@/services/failure-mode/failure-mode-types'
 import { usePermissions } from '@/lib/permissions'
 import { useFailureModeApprovalActions } from '@/hooks/use-failure-mode-approval-actions'
+import { toDateKey } from '@/lib/date'
+
+function formatDueDateParam(key: string) {
+  const [y, m, d] = key.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
 
 type ViewMode = 'all' | 'pending-approval'
 
@@ -168,6 +178,7 @@ export default function FailureModeScreen() {
   const insets = useSafeAreaInsets()
   const user = useAuthStore((s) => s.user)
   const { isAdmin } = usePermissions()
+  const { due_date: dueDateParam } = useLocalSearchParams<{ due_date?: string }>()
 
   const [viewMode, setViewMode] = useState<ViewMode>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -190,11 +201,11 @@ export default function FailureModeScreen() {
   useEffect(() => {
     setPage(1)
     setAllItems([])
-  }, [statusFilter, viewMode])
+  }, [statusFilter, viewMode, dueDateParam])
 
   const params = {
     page,
-    limit: 20,
+    limit: dueDateParam ? 1000 : 20,
     status: statusFilter === 'all' ? undefined : statusFilter,
     search: debouncedSearch || undefined,
   }
@@ -228,8 +239,11 @@ export default function FailureModeScreen() {
     }
   }, [data, pendingData, page, viewMode])
 
-  const totalPages =
-    viewMode === 'all' ? (data?.pagination?.pages ?? 1) : (pendingData?.meta?.totalPages ?? 1)
+  const totalPages = dueDateParam
+    ? 1
+    : viewMode === 'all'
+      ? (data?.pagination?.pages ?? 1)
+      : (pendingData?.meta?.totalPages ?? 1)
   const hasMore = page < totalPages
 
   const handleLoadMore = useCallback(() => {
@@ -319,6 +333,19 @@ export default function FailureModeScreen() {
           </Pressable>
         </View>
 
+        {/* Day filter banner (from the dashboard contribution heatmap) */}
+        {dueDateParam && viewMode === 'all' && (
+          <View className="mt-3 bg-gray-100 border border-gray-200 rounded-xl px-3.5 py-2.5 flex-row items-center justify-between">
+            <Text className="flex-1 text-xs text-gray-700 mr-2">
+              Showing contributions due{' '}
+              <Text className="font-semibold text-gray-900">{formatDueDateParam(dueDateParam)}</Text>
+            </Text>
+            <Pressable onPress={() => router.replace('/(app)/(contributions)')} hitSlop={8}>
+              <Text className="text-xs font-semibold text-blue-600">Clear</Text>
+            </Pressable>
+          </View>
+        )}
+
         {viewMode === 'all' ? (
           <>
             {/* Status filter chips */}
@@ -382,9 +409,12 @@ export default function FailureModeScreen() {
               ? (page === 1 ? (pendingData?.data ?? allItems) : allItems).filter(
                   (i) => i.reported_by !== user?.id,
                 )
-              : page === 1
-                ? (data?.data ?? allItems)
-                : allItems
+              : (() => {
+                  const items = page === 1 ? (data?.data ?? allItems) : allItems
+                  return dueDateParam
+                    ? items.filter((i) => i.due_date && toDateKey(new Date(i.due_date)) === dueDateParam)
+                    : items
+                })()
           }
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: insets.bottom + 24 }}

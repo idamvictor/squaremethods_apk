@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { MetricCard } from './MetricCard'
+import { ContributionHeatmap } from './ContributionHeatmap'
 import { JobCard } from '@/components/jobs/JobCard'
 import { useDashboard, useProfile } from '@/services/users/users-queries'
 import { useUserJobs } from '@/services/jobs/jobs-queries'
@@ -127,6 +128,8 @@ export function TechnicianDashboard() {
           />
         </View>
       </View>
+
+      <ContributionHeatmap />
 
       {/* Jobs list */}
       <View className="gap-y-3">
