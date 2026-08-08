@@ -9,20 +9,23 @@ const NAV_ITEMS = [
   { label: 'Jobs', icon: '💼', href: '/(app)/(jobs)' as const },
   { label: 'Tasks', icon: '✅', href: '/(app)/(tasks)' as const },
   { label: 'Users', icon: '👥', href: '/(app)/(users)' as const },
+  { label: 'Teams', icon: '🧑‍🤝‍🧑', href: '/(app)/(teams)' as const },
   { label: 'Contributions', icon: '🔁', href: '/(app)/(contributions)' as const },
   { label: 'Settings', icon: '⚙️', href: '/(app)/(settings)' as const },
 ]
 
-const TECHNICIAN_HIDDEN: string[] = ['/(app)/(tasks)', '/(app)/(users)']
+// Hidden for technicians: no access at all.
+const TECHNICIAN_HIDDEN: string[] = ['/(app)/(tasks)', '/(app)/(users)', '/(app)/(teams)']
+// Hidden for everyone else: already reachable from the main tab bar.
+const NON_TECHNICIAN_HIDDEN: string[] = ['/(app)/(contributions)']
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const { isTechnician, isSuperAdmin } = usePermissions()
-  const visibleItems = isTechnician
-    ? NAV_ITEMS.filter((item) => !TECHNICIAN_HIDDEN.includes(item.href))
-    : NAV_ITEMS
+  const hidden = isTechnician ? TECHNICIAN_HIDDEN : NON_TECHNICIAN_HIDDEN
+  const visibleItems = NAV_ITEMS.filter((item) => !hidden.includes(item.href))
 
   return (
     <View className="flex-1 bg-gray-50">

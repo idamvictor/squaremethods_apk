@@ -199,7 +199,7 @@ export default function CreateEquipmentScreen() {
       if (qrFailed) {
         Alert.alert('Equipment created', 'Equipment created but QR code generation failed. You can retry from the equipment detail screen.')
       }
-      router.back()
+      router.replace({ pathname: '/(app)/(equipment)/[id]', params: { id: newId } })
     } catch (e) {
       const message =
         (e as any)?.response?.data?.message ??

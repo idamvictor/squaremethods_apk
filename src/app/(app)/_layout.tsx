@@ -41,6 +41,15 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="(equipment)"
+        options={{
+          title: 'Equipment',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="construct-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="(job-aids)"
         options={{
           title: 'Job Aids',
@@ -50,21 +59,12 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="(teams)"
+        name="(contributions)"
         options={{
-          title: 'Teams',
+          title: 'Contributions',
           href: isTechnician ? null : undefined,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="(equipment)"
-        options={{
-          title: 'Equipment',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="construct-outline" size={size} color={color} />
+            <Ionicons name="git-pull-request-outline" size={size} color={color} />
           ),
         }}
       />
@@ -77,9 +77,9 @@ export default function AppLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="(teams)" options={{ href: null }} />
       <Tabs.Screen name="(jobs)" options={{ href: null }} />
       <Tabs.Screen name="(settings)" options={{ href: null }} />
-      <Tabs.Screen name="(contributions)" options={{ href: null }} />
       <Tabs.Screen name="(tasks)" options={{ href: null }} />
       <Tabs.Screen name="(users)" options={{ href: null }} />
       <Tabs.Screen name="(admin)" options={{ href: null }} />
