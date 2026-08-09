@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Clipboard,
   Pressable,
   Share,
   Text,
@@ -19,6 +20,8 @@ import {
   useGenerateInvitationLink,
 } from '@/services/invitations/invitations-queries'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
+import { usePermissions } from '@/lib/permissions'
+import { AccessRestricted } from '@/components/ui/access-restricted'
 import type { Invitation } from '@/services/invitations/invitations-types'
 
 const ROLE_ITEMS = [
@@ -62,6 +65,12 @@ function InvitationCard({
     ])
   }
 
+  function handleCopyLink() {
+    const base = process.env.EXPO_PUBLIC_WEB_BASE_URL ?? ''
+    Clipboard.setString(`${base}/invite?token=${item.token}`)
+    Alert.alert('Link copied', 'The invitation link has been copied to clipboard.')
+  }
+
   return (
     <View className="bg-white rounded-2xl p-4 gap-y-2">
       <View className="flex-row items-center justify-between">
@@ -75,19 +84,30 @@ function InvitationCard({
         {recipients}
       </Text>
 
+      {!!item.creator && (
+        <Text className="text-xs text-gray-400">
+          Invited by {item.creator.first_name} {item.creator.last_name}
+        </Text>
+      )}
+
       <View className="flex-row items-center justify-between">
         <Text className="text-xs text-gray-400">
           Used {item.used_count} time{item.used_count !== 1 ? 's' : ''}
           {item.max_uses != null ? ` of ${item.max_uses}` : ''}
         </Text>
-        <Pressable
-          onPress={handleRevoke}
-          disabled={revoking}
-          hitSlop={8}
-          className="active:opacity-60"
-        >
-          <Text className="text-xs font-medium text-red-500">Revoke</Text>
-        </Pressable>
+        <View className="flex-row items-center gap-x-4">
+          <Pressable onPress={handleCopyLink} hitSlop={8} className="active:opacity-60">
+            <Text className="text-xs font-medium text-blue-600">Copy Link</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleRevoke}
+            disabled={revoking}
+            hitSlop={8}
+            className="active:opacity-60"
+          >
+            <Text className="text-xs font-medium text-red-500">Revoke</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   )
@@ -95,6 +115,7 @@ function InvitationCard({
 
 export default function InviteScreen() {
   const insets = useSafeAreaInsets()
+  const { isAdmin } = usePermissions()
 
   // Send form state
   const [emails, setEmails] = useState('')
@@ -111,6 +132,10 @@ export default function InviteScreen() {
   const [showGenRolePicker, setShowGenRolePicker] = useState(false)
   const [genErrors, setGenErrors] = useState<Record<string, string>>({})
 
+  // Pending invitations pagination
+  const [invPage, setInvPage] = useState(1)
+  const [allInvitations, setAllInvitations] = useState<Invitation[]>([])
+
   // Hooks
   const { mutate: inviteUsers, isPending: sending, error: sendError } = useInviteUsers()
   const { mutate: revokeInvitation, isPending: revoking } = useRevokeInvitation()
@@ -118,14 +143,26 @@ export default function InviteScreen() {
   const {
     data: invitationsData,
     isLoading: invLoading,
+    isFetching: invFetching,
     refetch: refetchInvitations,
-  } = useInvitations({ page: 1, limit: 20 })
+  } = useInvitations({ page: invPage, limit: 20 })
+
+  useEffect(() => {
+    if (!invitationsData?.data) return
+    if (invPage === 1) {
+      setAllInvitations(invitationsData.data)
+    } else {
+      setAllInvitations((prev) => [...prev, ...invitationsData.data])
+    }
+  }, [invitationsData, invPage])
 
   const sendErrorMsg =
     (sendError as any)?.response?.data?.message ?? (sendError as any)?.message ?? null
   const selectedRoleLabel = ROLE_ITEMS.find((r) => r.value === role)?.label ?? ''
   const selectedGenRoleLabel = ROLE_ITEMS.find((r) => r.value === genRole)?.label ?? ''
-  const invitations = invitationsData?.data ?? []
+  const invitations = invPage === 1 ? (invitationsData?.data ?? allInvitations) : allInvitations
+  const invTotalPages = invitationsData?.pagination?.pages ?? 1
+  const invHasMore = invPage < invTotalPages
 
   function validateSend() {
     const e: Record<string, string> = {}
@@ -181,6 +218,10 @@ export default function InviteScreen() {
         },
       },
     )
+  }
+
+  if (!isAdmin) {
+    return <AccessRestricted />
   }
 
   return (
@@ -379,6 +420,20 @@ export default function InviteScreen() {
               revoking={revoking}
             />
           ))}
+
+          {invHasMore && (
+            <Pressable
+              onPress={() => setInvPage((p) => p + 1)}
+              disabled={invFetching}
+              className="items-center py-3"
+            >
+              {invFetching ? (
+                <ActivityIndicator size="small" color="#208AEF" />
+              ) : (
+                <Text className="text-sm font-medium text-blue-600">Load more</Text>
+              )}
+            </Pressable>
+          )}
         </View>
       </KeyboardAwareScrollView>
 

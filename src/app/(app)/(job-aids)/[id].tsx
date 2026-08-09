@@ -25,6 +25,14 @@ import { useAuthStore } from '@/store/auth-store'
 import { usePermissions } from '@/lib/permissions'
 import { useJobAidApprovalActions } from '@/hooks/use-job-aid-approval-actions'
 
+function goBackToList() {
+  if (router.canGoBack()) {
+    router.back()
+  } else {
+    router.replace('/(app)/(job-aids)')
+  }
+}
+
 function formatDate(dateStr: string | null | undefined) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -226,7 +234,7 @@ export default function JobAidDetailScreen() {
                 text: 'Delete',
                 style: 'destructive',
                 onPress: () =>
-                  deleteJobAid(jobAid.id, { onSuccess: () => router.back() }),
+                  deleteJobAid(jobAid.id, { onSuccess: () => goBackToList() }),
               },
             ],
           ),
@@ -311,7 +319,7 @@ export default function JobAidDetailScreen() {
         <Text className="text-sm text-gray-500 text-center">
           Could not load this job aid. Pull to refresh or go back.
         </Text>
-        <Pressable onPress={() => router.back()} className="active:opacity-60">
+        <Pressable onPress={goBackToList} className="active:opacity-60">
           <Text className="text-sm font-semibold text-blue-600">Go back</Text>
         </Pressable>
       </View>
@@ -333,7 +341,7 @@ export default function JobAidDetailScreen() {
         style={{ paddingTop: insets.top }}
         className="bg-white border-b border-gray-100 px-4 pb-3 flex-row items-center gap-x-3"
       >
-        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-60">
+        <Pressable onPress={goBackToList} hitSlop={8} className="active:opacity-60">
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </Pressable>
         <Text className="flex-1 text-base font-bold text-gray-900" numberOfLines={1}>

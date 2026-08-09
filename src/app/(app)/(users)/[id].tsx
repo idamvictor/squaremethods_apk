@@ -15,7 +15,8 @@ import {
   useDeactivateUser,
   useAdminDeleteUser,
 } from "@/services/users/users-queries";
-import { useAuthStore } from "@/store/auth-store";
+import { usePermissions } from "@/lib/permissions";
+import { AccessRestricted } from "@/components/ui/access-restricted";
 
 function formatDate(dateStr?: string | null) {
   if (!dateStr) return "—";
@@ -59,9 +60,7 @@ export default function UserDetailScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id: string }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const currentUser = useAuthStore((s) => s.user);
-  const isAdmin =
-    currentUser?.role === "owner" || currentUser?.role === "admin" || currentUser?.role === "superadmin";
+  const { isAdmin } = usePermissions();
 
   const { data: userData, isLoading, error } = useUserById(id);
   const { mutate: activateUser } = useActivateUser();
@@ -113,6 +112,10 @@ export default function UserDetailScreen() {
       },
       { text: "Cancel", style: "cancel" },
     ]);
+  }
+
+  if (!isAdmin) {
+    return <AccessRestricted />;
   }
 
   if (isLoading) {

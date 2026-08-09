@@ -6,6 +6,7 @@ export interface UsersQueryParams {
   search?: string
   role?: string
   status?: 'active' | 'inactive'
+  team_id?: string
 }
 
 export interface UpdateUserInput {
@@ -100,12 +101,14 @@ export interface CompanyUsersResponse {
   success: boolean
   data: CompanyUser[]
   meta: { total: number; page: number; limit: number; totalPages: number }
+  pagination?: { total: number; page: number; limit: number; pages: number }
 }
 
 export interface UsersResponse {
   success: boolean
   data: CompanyUser[]
   meta: { total: number; page: number; limit: number; totalPages: number }
+  pagination?: { total: number; page: number; limit: number; pages: number }
 }
 
 export interface UserDetailResponse {

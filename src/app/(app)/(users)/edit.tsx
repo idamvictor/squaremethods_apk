@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useUserById, useUpdateUser } from '@/services/users/users-queries'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
+import { usePermissions } from '@/lib/permissions'
+import { AccessRestricted } from '@/components/ui/access-restricted'
 
 const ROLE_ITEMS = [
   { label: 'Owner', value: 'owner' },
@@ -25,6 +27,7 @@ export default function EditUserScreen() {
   const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ id: string }>()
   const id = Array.isArray(params.id) ? params.id[0] : params.id
+  const { isAdmin } = usePermissions()
   const { data: userData, isLoading: userLoading } = useUserById(id)
   const { mutate: updateUser, isPending, error: apiError } = useUpdateUser()
 
@@ -65,6 +68,10 @@ export default function EditUserScreen() {
   }
 
   const apiErrorMsg = (apiError as any)?.response?.data?.message ?? (apiError as any)?.message ?? null
+
+  if (!isAdmin) {
+    return <AccessRestricted />
+  }
 
   if (userLoading) {
     return (
