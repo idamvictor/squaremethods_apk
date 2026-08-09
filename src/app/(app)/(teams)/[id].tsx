@@ -11,7 +11,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
-import { useAuthStore } from '@/store/auth-store'
 import {
   useTeamById,
   useAddTeamMember,
@@ -20,10 +19,8 @@ import {
 } from '@/services/teams/teams-queries'
 import { useCompanyUsers } from '@/services/users/users-queries'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
+import { usePermissions } from '@/lib/permissions'
 import type { TeamMember } from '@/services/teams/teams-types'
-import type { UserRole } from '@/types/auth'
-
-const ADMIN_ROLES: UserRole[] = ['superadmin', 'owner', 'admin', 'user', 'viewer']
 
 const ROLE_STYLE: Record<string, { bg: string; text: string }> = {
   manager: { bg: 'bg-purple-100', text: 'text-purple-700' },
@@ -35,6 +32,11 @@ const ROLE_STYLE: Record<string, { bg: string; text: string }> = {
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase()
+}
+
+function formatJoinDate(dateStr: string | null | undefined) {
+  if (!dateStr) return null
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function MemberRow({
@@ -63,6 +65,11 @@ function MemberRow({
           {member.first_name} {member.last_name}
         </Text>
         <Text className="text-xs text-gray-400" numberOfLines={1}>{member.email}</Text>
+        {!!formatJoinDate(member.created_at) && (
+          <Text className="text-xs text-gray-400" numberOfLines={1}>
+            Joined {formatJoinDate(member.created_at)}
+          </Text>
+        )}
       </View>
       <View className={`px-2 py-0.5 rounded-full ${roleStyle.bg}`}>
         <Text className={`text-xs font-medium capitalize ${roleStyle.text}`}>{member.role}</Text>
@@ -80,8 +87,7 @@ export default function TeamDetailScreen() {
   const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ id: string }>()
   const id = Array.isArray(params.id) ? params.id[0] : params.id
-  const user = useAuthStore((s) => s.user)
-  const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
+  const { isAdmin } = usePermissions()
 
   const { data: team, isLoading, error } = useTeamById(id)
   const { mutate: addMember, isPending: isAdding } = useAddTeamMember()

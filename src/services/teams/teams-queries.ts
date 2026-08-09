@@ -106,6 +106,7 @@ export function useAddTeamMember() {
     onSuccess: (_data, { teamId }) => {
       qc.invalidateQueries({ queryKey: ['teams', teamId] })
       qc.invalidateQueries({ queryKey: ['teams', teamId, 'members'] })
+      qc.invalidateQueries({ queryKey: ['teams'] })
     },
   })
 }
@@ -120,6 +121,7 @@ export function useRemoveTeamMember() {
     onSuccess: (_data, { teamId }) => {
       qc.invalidateQueries({ queryKey: ['teams', teamId] })
       qc.invalidateQueries({ queryKey: ['teams', teamId, 'members'] })
+      qc.invalidateQueries({ queryKey: ['teams'] })
     },
   })
 }

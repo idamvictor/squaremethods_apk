@@ -14,6 +14,7 @@ export interface TeamMember {
   email: string
   role: string
   avatar_url: string | null
+  created_at?: string
 }
 
 export interface TeamListResponse {
