@@ -19,8 +19,9 @@ import {
   useDeleteFailureMode,
 } from '@/services/failure-mode/failure-mode-queries'
 import type { ContributionType, FailureMode, FailureModeStatus } from '@/services/failure-mode/failure-mode-types'
-import { usePermissions } from '@/lib/permissions'
 import { useFailureModeApprovalActions } from '@/hooks/use-failure-mode-approval-actions'
+import { useUsers } from '@/services/users/users-queries'
+import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import { toDateKey } from '@/lib/date'
 
 function formatDueDateParam(key: string) {
@@ -177,16 +178,30 @@ function FailureModeCard({
 export default function FailureModeScreen() {
   const insets = useSafeAreaInsets()
   const user = useAuthStore((s) => s.user)
-  const { isAdmin } = usePermissions()
   const { due_date: dueDateParam } = useLocalSearchParams<{ due_date?: string }>()
 
   const [viewMode, setViewMode] = useState<ViewMode>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [equipmentFilter, setEquipmentFilter] = useState('')
+  const [reportedByFilter, setReportedByFilter] = useState('')
+  const [reportedByName, setReportedByName] = useState('')
+  const [filterPicker, setFilterPicker] = useState<'equipment' | 'reportedBy' | null>(null)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [allItems, setAllItems] = useState<FailureMode[]>([])
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { data: usersData } = useUsers({ page: 1, limit: 1000 })
+  const reportedByItems = (usersData?.data ?? []).map((u) => ({
+    label: `${u.first_name} ${u.last_name}`,
+    value: u.id,
+  }))
+  const equipmentFilterItems = Array.from(
+    new Map(
+      allItems.filter((i) => i.equipment).map((i) => [i.equipment!.id, i.equipment!.name]),
+    ).entries(),
+  ).map(([value, label]) => ({ label, value }))
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
@@ -201,13 +216,25 @@ export default function FailureModeScreen() {
   useEffect(() => {
     setPage(1)
     setAllItems([])
-  }, [statusFilter, viewMode, dueDateParam])
+  }, [statusFilter, reportedByFilter, viewMode, dueDateParam])
+
+  function handleResetFilters() {
+    setStatusFilter('all')
+    setEquipmentFilter('')
+    setReportedByFilter('')
+    setReportedByName('')
+    setSearch('')
+    setDebouncedSearch('')
+    setPage(1)
+    setAllItems([])
+  }
 
   const params = {
     page,
     limit: dueDateParam ? 1000 : 20,
     status: statusFilter === 'all' ? undefined : statusFilter,
     search: debouncedSearch || undefined,
+    reported_by: reportedByFilter || undefined,
   }
 
   const {
@@ -257,8 +284,6 @@ export default function FailureModeScreen() {
   }, [refetchAll, refetchPending, viewMode])
 
   function handleLongPress(item: FailureMode) {
-    const canEdit = isAdmin || user?.id === item.reported_by
-    if (!canEdit) return
     Alert.alert(item.title, undefined, [
       {
         text: 'Edit',
@@ -370,6 +395,48 @@ export default function FailureModeScreen() {
               ))}
             </ScrollView>
 
+            {/* Equipment / Contributed By filters */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="mt-2 -mx-4"
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+            >
+              <Pressable
+                onPress={() => setFilterPicker('equipment')}
+                className={`flex-row items-center gap-x-1 px-3.5 py-1.5 rounded-full border ${
+                  equipmentFilter ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'
+                }`}
+              >
+                <Text className={`text-xs font-medium ${equipmentFilter ? 'text-white' : 'text-gray-600'}`} numberOfLines={1}>
+                  {equipmentFilter ? equipmentFilterItems.find((e) => e.value === equipmentFilter)?.label : 'Equipment'}
+                </Text>
+                <Ionicons name="chevron-down" size={12} color={equipmentFilter ? '#FFFFFF' : '#9CA3AF'} />
+              </Pressable>
+
+              <Pressable
+                onPress={() => setFilterPicker('reportedBy')}
+                className={`flex-row items-center gap-x-1 px-3.5 py-1.5 rounded-full border ${
+                  reportedByFilter ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'
+                }`}
+              >
+                <Text className={`text-xs font-medium ${reportedByFilter ? 'text-white' : 'text-gray-600'}`} numberOfLines={1}>
+                  {reportedByFilter ? reportedByName : 'Contributed By'}
+                </Text>
+                <Ionicons name="chevron-down" size={12} color={reportedByFilter ? '#FFFFFF' : '#9CA3AF'} />
+              </Pressable>
+
+              {(statusFilter !== 'all' || !!equipmentFilter || !!reportedByFilter || !!search) && (
+                <Pressable
+                  onPress={handleResetFilters}
+                  className="flex-row items-center gap-x-1 px-3.5 py-1.5 rounded-full border border-gray-200 bg-white"
+                >
+                  <Ionicons name="refresh" size={12} color="#6B7280" />
+                  <Text className="text-xs font-medium text-gray-600">Reset</Text>
+                </Pressable>
+              )}
+            </ScrollView>
+
             {/* Search */}
             <View className="flex-row items-center bg-gray-100 rounded-xl px-3 h-9 mt-3 gap-x-2">
               <Ionicons name="search-outline" size={15} color="#9CA3AF" />
@@ -404,18 +471,21 @@ export default function FailureModeScreen() {
         </View>
       ) : (
         <FlatList
-          data={
-            viewMode === 'pending-approval'
-              ? (page === 1 ? (pendingData?.data ?? allItems) : allItems).filter(
-                  (i) => i.reported_by !== user?.id,
-                )
-              : (() => {
-                  const items = page === 1 ? (data?.data ?? allItems) : allItems
-                  return dueDateParam
-                    ? items.filter((i) => i.due_date && toDateKey(new Date(i.due_date)) === dueDateParam)
-                    : items
-                })()
-          }
+          data={(() => {
+            let items =
+              viewMode === 'pending-approval'
+                ? (page === 1 ? (pendingData?.data ?? allItems) : allItems).filter(
+                    (i) => i.reported_by !== user?.id,
+                  )
+                : (() => {
+                    const all = page === 1 ? (data?.data ?? allItems) : allItems
+                    return dueDateParam
+                      ? all.filter((i) => i.due_date && toDateKey(new Date(i.due_date)) === dueDateParam)
+                      : all
+                  })()
+            if (equipmentFilter) items = items.filter((i) => i.equipment?.id === equipmentFilter)
+            return items
+          })()}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: insets.bottom + 24 }}
           onRefresh={handleRefresh}
@@ -448,6 +518,33 @@ export default function FailureModeScreen() {
           }
         />
       )}
+
+      <BottomSheetPicker
+        visible={filterPicker === 'equipment'}
+        onClose={() => setFilterPicker(null)}
+        title="Filter by Equipment"
+        items={equipmentFilterItems}
+        selected={equipmentFilter || null}
+        onSelect={(value) => {
+          setEquipmentFilter(value)
+          setFilterPicker(null)
+        }}
+      />
+
+      <BottomSheetPicker
+        visible={filterPicker === 'reportedBy'}
+        onClose={() => setFilterPicker(null)}
+        title="Filter by Contributed By"
+        items={reportedByItems}
+        selected={reportedByFilter || null}
+        searchable
+        onSelect={(value) => {
+          const found = reportedByItems.find((r) => r.value === value)
+          setReportedByFilter(value)
+          setReportedByName(found?.label ?? '')
+          setFilterPicker(null)
+        }}
+      />
     </View>
   )
 }

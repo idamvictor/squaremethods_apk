@@ -363,6 +363,7 @@ export default function EditJobAidScreen() {
         selected={null}
         searchable
         loading={equipmentLoading}
+        onSearchChange={setEquipmentSearch}
         onSelect={(eqId) => {
           if (!selectedEquipmentIds.includes(eqId)) {
             const found = equipmentItems.find((e) => e.value === eqId)

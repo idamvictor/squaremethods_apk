@@ -33,6 +33,7 @@ interface BottomSheetPickerProps {
   title: string
   searchable?: boolean
   loading?: boolean
+  onSearchChange?: (text: string) => void
 }
 
 export function BottomSheetPicker({
@@ -44,6 +45,7 @@ export function BottomSheetPicker({
   title,
   searchable = false,
   loading = false,
+  onSearchChange,
 }: BottomSheetPickerProps) {
   const slideAnim = useRef(new Animated.Value(400)).current
   const [search, setSearch] = useState('')
@@ -51,6 +53,7 @@ export function BottomSheetPicker({
   useEffect(() => {
     if (visible) {
       setSearch('')
+      onSearchChange?.('')
       Animated.spring(slideAnim, {
         toValue: 0,
         useNativeDriver: true,
@@ -101,7 +104,10 @@ export function BottomSheetPicker({
                 <Ionicons name="search-outline" size={16} color="#9CA3AF" />
                 <TextInput
                   value={search}
-                  onChangeText={setSearch}
+                  onChangeText={(text) => {
+                    setSearch(text)
+                    onSearchChange?.(text)
+                  }}
                   placeholder="Search…"
                   className="flex-1 text-sm text-gray-800"
                   placeholderTextColor="#9CA3AF"

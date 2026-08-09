@@ -67,8 +67,11 @@ export default function EditFailureModeScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [initialized, setInitialized] = useState(false)
   const [showTypePicker, setShowTypePicker] = useState(false)
+  const [equipmentSearch, setEquipmentSearch] = useState('')
 
-  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment()
+  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment(
+    equipmentSearch ? { search: equipmentSearch } : undefined,
+  )
   const equipmentItems = (equipmentData?.data ?? []).map((e) => ({ label: e.name, value: e.id }))
 
   useEffect(() => {
@@ -343,6 +346,7 @@ export default function EditFailureModeScreen() {
         selected={equipmentId}
         searchable
         loading={equipmentLoading}
+        onSearchChange={setEquipmentSearch}
         onSelect={(value) => {
           const found = equipmentItems.find((e) => e.value === value)
           setEquipmentId(value)

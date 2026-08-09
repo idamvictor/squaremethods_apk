@@ -110,10 +110,13 @@ export default function EditJobScreen() {
 
   const [picker, setPicker] = useState<'team' | 'assignee' | 'equipment' | 'task' | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [equipmentSearch, setEquipmentSearch] = useState('')
 
   const { data: teamsData, isLoading: teamsLoading } = useTeams()
   const { data: membersData, isLoading: membersLoading } = useTeamMembers(teamId || undefined)
-  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment()
+  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment(
+    equipmentSearch ? { search: equipmentSearch } : undefined,
+  )
   const { data: tasksData, isLoading: tasksLoading } = useTasks(
     equipmentId ? { equipment_id: equipmentId } : undefined,
   )
@@ -450,6 +453,7 @@ export default function EditJobScreen() {
         selected={equipmentId}
         searchable
         loading={equipmentLoading}
+        onSearchChange={setEquipmentSearch}
         onSelect={(value) => {
           const found = equipmentItems.find((e) => e.value === value)
           if (value !== equipmentId) {

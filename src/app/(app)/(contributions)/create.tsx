@@ -56,8 +56,11 @@ export default function CreateFailureModeScreen() {
   const [showEquipmentPicker, setShowEquipmentPicker] = useState(false)
   const [showTypePicker, setShowTypePicker] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [equipmentSearch, setEquipmentSearch] = useState('')
 
-  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment()
+  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment(
+    equipmentSearch ? { search: equipmentSearch } : undefined,
+  )
   const equipmentItems = (equipmentData?.data ?? []).map((e) => ({ label: e.name, value: e.id }))
 
   function addResolution() {
@@ -306,6 +309,7 @@ export default function CreateFailureModeScreen() {
         selected={equipmentId}
         searchable
         loading={equipmentLoading}
+        onSearchChange={setEquipmentSearch}
         onSelect={(value) => {
           const found = equipmentItems.find((e) => e.value === value)
           setEquipmentId(value)

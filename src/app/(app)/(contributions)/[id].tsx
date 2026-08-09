@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -10,13 +12,11 @@ import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
-import { useAuthStore } from '@/store/auth-store'
 import {
   useFailureModeById,
   useDeleteFailureMode,
 } from '@/services/failure-mode/failure-mode-queries'
 import type { ContributionType, FailureMode, FailureModeStatus } from '@/services/failure-mode/failure-mode-types'
-import { usePermissions } from '@/lib/permissions'
 import { useFailureModeApprovalActions } from '@/hooks/use-failure-mode-approval-actions'
 
 const STATUS_STYLE: Record<FailureModeStatus, { bg: string; text: string; label: string }> = {
@@ -124,13 +124,10 @@ export default function FailureModeDetailScreen() {
   const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ id: string }>()
   const id = Array.isArray(params.id) ? params.id[0] : params.id
-  const user = useAuthStore((s) => s.user)
-  const { isAdmin } = usePermissions()
 
   const { data: fm, isLoading, error } = useFailureModeById(id)
   const { mutate: deleteFm, isPending: isDeleting } = useDeleteFailureMode()
-
-  const canModify = isAdmin || user?.id === fm?.reported_by
+  const [imageViewerVisible, setImageViewerVisible] = useState(false)
 
   function handleDelete() {
     if (!id) return
@@ -190,18 +187,17 @@ export default function FailureModeDetailScreen() {
         <Text className="flex-1 text-base font-bold text-gray-900" numberOfLines={1}>
           {fm.title}
         </Text>
-        {canModify && (
-          <Pressable onPress={handleKebab} hitSlop={8} className="active:opacity-60">
-            <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
-          </Pressable>
-        )}
+        <Pressable onPress={handleKebab} hitSlop={8} className="active:opacity-60">
+          <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+        </Pressable>
       </View>
 
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 96 }}
       >
         {/* Hero image card */}
-        <View
+        <Pressable
+          onPress={() => fm.image && setImageViewerVisible(true)}
           className="w-full bg-gray-200 rounded-2xl overflow-hidden"
           style={{ aspectRatio: 16 / 9 }}
         >
@@ -217,7 +213,7 @@ export default function FailureModeDetailScreen() {
               <Ionicons name="warning-outline" size={48} color="#9CA3AF" />
             </View>
           )}
-        </View>
+        </Pressable>
 
         {/* Status + Contribution Type badges */}
         <View className="flex-row gap-x-2 flex-wrap">
@@ -240,7 +236,8 @@ export default function FailureModeDetailScreen() {
                 label="Contributed By"
                 value={
                   fm.reporter
-                    ? `${fm.reporter.first_name} ${fm.reporter.last_name}`.trim()
+                    ? `${fm.reporter.first_name} ${fm.reporter.last_name}`.trim() +
+                      (fm.reporter.role ? ` (${fm.reporter.role})` : '')
                     : '—'
                 }
               />
@@ -283,6 +280,28 @@ export default function FailureModeDetailScreen() {
       </ScrollView>
 
       <ApprovalActionsBar fm={fm} insetsBottom={insets.bottom} />
+
+      {fm.image && (
+        <Modal visible={imageViewerVisible} transparent animationType="fade" onRequestClose={() => setImageViewerVisible(false)}>
+          <Pressable
+            onPress={() => setImageViewerVisible(false)}
+            className="flex-1 bg-black/90 items-center justify-center"
+          >
+            <Image
+              source={{ uri: fm.image }}
+              style={{ width: '100%', height: '80%' }}
+              contentFit="contain"
+            />
+            <Pressable
+              onPress={() => setImageViewerVisible(false)}
+              hitSlop={12}
+              style={{ position: 'absolute', top: insets.top + 12, right: 20 }}
+            >
+              <Ionicons name="close" size={28} color="#FFFFFF" />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
     </View>
   )
 }

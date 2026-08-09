@@ -417,6 +417,7 @@ export default function CreateJobScreen() {
         selected={equipmentId}
         searchable
         loading={equipmentLoading}
+        onSearchChange={setEquipmentSearch}
         onSelect={(value) => {
           const found = equipmentItems.find((e) => e.value === value)
           setEquipmentId(value)
