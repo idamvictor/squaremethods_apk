@@ -14,6 +14,7 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 import { useCreateJob } from '@/services/jobs/jobs-queries'
 import { useTeams, useTeamMembers } from '@/services/teams/teams-queries'
 import { useEquipment } from '@/services/equipment/equipment-queries'
+import { useTasks } from '@/services/tasks/tasks-queries'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import type { JobPriority } from '@/services/jobs/jobs-types'
 
@@ -95,6 +96,8 @@ export default function CreateJobScreen() {
   const [assigneeName, setAssigneeName] = useState('')
   const [equipmentId, setEquipmentId] = useState('')
   const [equipmentName, setEquipmentName] = useState('')
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
+  const [selectedTaskTitles, setSelectedTaskTitles] = useState<string[]>([])
   const [dueDate, setDueDate] = useState<Date>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [estimatedDuration, setEstimatedDuration] = useState('')
@@ -102,7 +105,7 @@ export default function CreateJobScreen() {
 
   const [equipmentSearch, setEquipmentSearch] = useState('')
 
-  const [picker, setPicker] = useState<'team' | 'assignee' | 'equipment' | null>(null)
+  const [picker, setPicker] = useState<'team' | 'assignee' | 'equipment' | 'task' | null>(null)
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -110,6 +113,9 @@ export default function CreateJobScreen() {
   const { data: membersData, isLoading: membersLoading } = useTeamMembers(teamId || undefined)
   const { data: equipmentData, isLoading: equipmentLoading } = useEquipment(
     equipmentSearch ? { search: equipmentSearch } : undefined,
+  )
+  const { data: tasksData, isLoading: tasksLoading } = useTasks(
+    equipmentId ? { equipment_id: equipmentId } : undefined,
   )
 
   const teamItems = (teamsData?.data ?? []).map((t) => ({ label: t.name, value: t.id }))
@@ -121,6 +127,15 @@ export default function CreateJobScreen() {
     { label: 'None', value: '' },
     ...(equipmentData?.data ?? []).map((e) => ({ label: e.name, value: e.id })),
   ]
+  const taskItems = (tasksData?.data ?? [])
+    .filter((t) => !selectedTaskIds.includes(t.id))
+    .map((t) => ({ label: t.title, value: t.id }))
+
+  function removeTask(id: string) {
+    const idx = selectedTaskIds.indexOf(id)
+    setSelectedTaskIds((prev) => prev.filter((_, i) => i !== idx))
+    setSelectedTaskTitles((prev) => prev.filter((_, i) => i !== idx))
+  }
 
   function validate() {
     const e: Record<string, string> = {}
@@ -128,6 +143,7 @@ export default function CreateJobScreen() {
     if (!teamId) e.team = 'Team is required'
     if (!assignedTo) e.assignedTo = 'Assignee is required'
     if (!estimatedDuration || Number(estimatedDuration) <= 0) e.duration = 'Enter a valid duration'
+    if (selectedTaskIds.length === 0) e.tasks = 'Select at least one task'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -143,9 +159,10 @@ export default function CreateJobScreen() {
         assigned_to: assignedTo,
         equipment_id: equipmentId || null,
         due_date: toISODate(dueDate),
-        estimated_duration: Number(estimatedDuration),
+        // Backend stores estimated_duration in minutes; the form collects hours.
+        estimated_duration: Math.round(Number(estimatedDuration) * 60),
         safety_notes: safetyNotes.trim(),
-        task_ids: [],
+        task_ids: selectedTaskIds,
       },
       { onSuccess: () => router.back() },
     )
@@ -265,6 +282,46 @@ export default function CreateJobScreen() {
           onPress={() => setPicker('equipment')}
         />
 
+        {/* Tasks */}
+        <View>
+          <View className="flex-row items-center justify-between mb-2">
+            <FieldLabel label="Select Task" required />
+            {!!equipmentId && (
+              <Pressable onPress={() => setPicker('task')} className="active:opacity-60">
+                <Text className="text-sm font-semibold text-blue-600">+ Add</Text>
+              </Pressable>
+            )}
+          </View>
+          {!equipmentId ? (
+            <View className="rounded-xl bg-blue-50 border border-blue-200 p-3">
+              <Text className="text-sm text-blue-700">
+                Select equipment first to see available tasks
+              </Text>
+            </View>
+          ) : (
+            <>
+              {selectedTaskTitles.length > 0 ? (
+                <View className="flex-row flex-wrap gap-2">
+                  {selectedTaskTitles.map((title2, i) => (
+                    <View
+                      key={selectedTaskIds[i]}
+                      className="flex-row items-center bg-blue-50 border border-blue-200 rounded-full px-3 py-1 gap-x-1.5"
+                    >
+                      <Text className="text-xs font-medium text-blue-700">{title2}</Text>
+                      <Pressable onPress={() => removeTask(selectedTaskIds[i])} hitSlop={4}>
+                        <Ionicons name="close" size={12} color="#1D4ED8" />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text className="text-sm text-gray-400 italic">No tasks selected</Text>
+              )}
+            </>
+          )}
+          <FieldError message={errors.tasks} />
+        </View>
+
         {/* Due Date */}
         <View>
           <FieldLabel label="Due Date" required />
@@ -364,6 +421,26 @@ export default function CreateJobScreen() {
           const found = equipmentItems.find((e) => e.value === value)
           setEquipmentId(value)
           setEquipmentName(value ? (found?.label ?? '') : '')
+          setSelectedTaskIds([])
+          setSelectedTaskTitles([])
+        }}
+      />
+
+      <BottomSheetPicker
+        visible={picker === 'task'}
+        onClose={() => setPicker(null)}
+        title="Select Task"
+        items={taskItems}
+        selected={null}
+        loading={tasksLoading}
+        onSelect={(value) => {
+          if (!selectedTaskIds.includes(value)) {
+            const found = taskItems.find((t) => t.value === value)
+            setSelectedTaskIds((prev) => [...prev, value])
+            setSelectedTaskTitles((prev) => [...prev, found?.label ?? value])
+            setErrors((e) => ({ ...e, tasks: '' }))
+          }
+          setPicker(null)
         }}
       />
     </View>

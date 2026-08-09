@@ -14,7 +14,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
 import { useJobs, useUserJobs, useDeleteJob } from '@/services/jobs/jobs-queries'
-import type { Job, JobStatus } from '@/services/jobs/jobs-types'
+import { useUsers } from '@/services/users/users-queries'
+import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
+import type { Job, JobPriority, JobStatus } from '@/services/jobs/jobs-types'
 import type { UserRole } from '@/types/auth'
 
 const ADMIN_ROLES: UserRole[] = ['superadmin', 'owner', 'admin', 'user', 'viewer']
@@ -28,6 +30,13 @@ const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
   { label: 'Completed', value: 'completed' },
   { label: 'On Hold', value: 'on_hold' },
   { label: 'Cancelled', value: 'cancelled' },
+]
+
+const PRIORITY_FILTER_ITEMS: { label: string; value: JobPriority }[] = [
+  { label: 'Low', value: 'low' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'High', value: 'high' },
+  { label: 'Urgent', value: 'urgent' },
 ]
 
 const STATUS_COLORS: Record<JobStatus, string> = {
@@ -112,11 +121,27 @@ export default function JobsScreen() {
   const isAdmin = ADMIN_ROLES.includes((user?.role ?? '') as UserRole)
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [priorityFilter, setPriorityFilter] = useState<JobPriority | 'all'>('all')
+  const [assignedFilter, setAssignedFilter] = useState('')
+  const [assignedName, setAssignedName] = useState('')
+  const [equipmentFilter, setEquipmentFilter] = useState('')
+  const [filterPicker, setFilterPicker] = useState<'priority' | 'assigned' | 'equipment' | null>(null)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [allJobs, setAllJobs] = useState<Job[]>([])
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { data: usersData } = useUsers({ page: 1, limit: 1000 })
+  const assignedItems = (usersData?.data ?? []).map((u) => ({
+    label: `${u.first_name} ${u.last_name}`,
+    value: u.id,
+  }))
+  const equipmentFilterItems = Array.from(
+    new Map(
+      allJobs.filter((j) => j.equipment).map((j) => [j.equipment!.id, j.equipment!.name]),
+    ).entries(),
+  ).map(([value, label]) => ({ label, value }))
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
@@ -131,12 +156,26 @@ export default function JobsScreen() {
   useEffect(() => {
     setPage(1)
     setAllJobs([])
-  }, [statusFilter])
+  }, [statusFilter, priorityFilter, assignedFilter])
+
+  function handleResetFilters() {
+    setStatusFilter('all')
+    setPriorityFilter('all')
+    setAssignedFilter('')
+    setAssignedName('')
+    setEquipmentFilter('')
+    setSearch('')
+    setDebouncedSearch('')
+    setPage(1)
+    setAllJobs([])
+  }
 
   const params = {
     page,
     limit: 20,
     status: statusFilter === 'all' ? undefined : statusFilter,
+    priority: priorityFilter === 'all' ? undefined : priorityFilter,
+    assigned_to: assignedFilter || undefined,
     search: debouncedSearch || undefined,
   }
 
@@ -148,6 +187,11 @@ export default function JobsScreen() {
 
   const query = isAdmin ? adminQuery : techQuery
   const { mutate: deleteJob } = useDeleteJob()
+  const visibleJobs = equipmentFilter
+    ? (page === 1 ? (query.data?.data ?? allJobs) : allJobs).filter(
+        (j) => j.equipment?.id === equipmentFilter,
+      )
+    : page === 1 ? (query.data?.data ?? allJobs) : allJobs
 
   useEffect(() => {
     const newJobs = query.data?.data ?? []
@@ -239,6 +283,60 @@ export default function JobsScreen() {
           ))}
         </ScrollView>
 
+        {/* Priority / assignee / equipment filters */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mt-2 -mx-4"
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+        >
+          <Pressable
+            onPress={() => setFilterPicker('priority')}
+            className={`flex-row items-center gap-x-1 px-3.5 py-1.5 rounded-full border ${
+              priorityFilter !== 'all' ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'
+            }`}
+          >
+            <Text className={`text-xs font-medium ${priorityFilter !== 'all' ? 'text-white' : 'text-gray-600'}`}>
+              {priorityFilter === 'all' ? 'Priority' : PRIORITY_FILTER_ITEMS.find((p) => p.value === priorityFilter)?.label}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={priorityFilter !== 'all' ? '#FFFFFF' : '#9CA3AF'} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => setFilterPicker('assigned')}
+            className={`flex-row items-center gap-x-1 px-3.5 py-1.5 rounded-full border ${
+              assignedFilter ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'
+            }`}
+          >
+            <Text className={`text-xs font-medium ${assignedFilter ? 'text-white' : 'text-gray-600'}`} numberOfLines={1}>
+              {assignedFilter ? assignedName : 'Assigned To'}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={assignedFilter ? '#FFFFFF' : '#9CA3AF'} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => setFilterPicker('equipment')}
+            className={`flex-row items-center gap-x-1 px-3.5 py-1.5 rounded-full border ${
+              equipmentFilter ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'
+            }`}
+          >
+            <Text className={`text-xs font-medium ${equipmentFilter ? 'text-white' : 'text-gray-600'}`} numberOfLines={1}>
+              {equipmentFilter ? equipmentFilterItems.find((e) => e.value === equipmentFilter)?.label : 'Equipment'}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={equipmentFilter ? '#FFFFFF' : '#9CA3AF'} />
+          </Pressable>
+
+          {(statusFilter !== 'all' || priorityFilter !== 'all' || !!assignedFilter || !!equipmentFilter || !!search) && (
+            <Pressable
+              onPress={handleResetFilters}
+              className="flex-row items-center gap-x-1 px-3.5 py-1.5 rounded-full border border-gray-200 bg-white"
+            >
+              <Ionicons name="refresh" size={12} color="#6B7280" />
+              <Text className="text-xs font-medium text-gray-600">Reset</Text>
+            </Pressable>
+          )}
+        </ScrollView>
+
         {/* Search */}
         <View className="flex-row items-center bg-gray-100 rounded-xl px-3 h-9 mt-3 gap-x-2">
           <Ionicons name="search-outline" size={15} color="#9CA3AF" />
@@ -265,7 +363,7 @@ export default function JobsScreen() {
         </View>
       ) : (
         <FlatList
-          data={page === 1 ? (query.data?.data ?? allJobs) : allJobs}
+          data={visibleJobs}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: insets.bottom + 24 }}
           onRefresh={handleRefresh}
@@ -294,6 +392,45 @@ export default function JobsScreen() {
           }
         />
       )}
+
+      <BottomSheetPicker
+        visible={filterPicker === 'priority'}
+        onClose={() => setFilterPicker(null)}
+        title="Filter by Priority"
+        items={PRIORITY_FILTER_ITEMS}
+        selected={priorityFilter === 'all' ? null : priorityFilter}
+        onSelect={(value) => {
+          setPriorityFilter(value as JobPriority)
+          setFilterPicker(null)
+        }}
+      />
+
+      <BottomSheetPicker
+        visible={filterPicker === 'assigned'}
+        onClose={() => setFilterPicker(null)}
+        title="Filter by Assigned To"
+        items={assignedItems}
+        selected={assignedFilter || null}
+        searchable
+        onSelect={(value) => {
+          const found = assignedItems.find((a) => a.value === value)
+          setAssignedFilter(value)
+          setAssignedName(found?.label ?? '')
+          setFilterPicker(null)
+        }}
+      />
+
+      <BottomSheetPicker
+        visible={filterPicker === 'equipment'}
+        onClose={() => setFilterPicker(null)}
+        title="Filter by Equipment"
+        items={equipmentFilterItems}
+        selected={equipmentFilter || null}
+        onSelect={(value) => {
+          setEquipmentFilter(value)
+          setFilterPicker(null)
+        }}
+      />
     </View>
   )
 }

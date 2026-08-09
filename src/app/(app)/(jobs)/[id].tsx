@@ -49,6 +49,13 @@ function isOverdue(dateStr: string, status: JobStatus) {
   return new Date(dateStr) < new Date()
 }
 
+// Backend stores durations in minutes; display them as hours.
+function formatDurationHours(minutes: number | null | undefined) {
+  if (!minutes) return '—'
+  const hours = minutes / 60
+  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}h`
+}
+
 function InfoRow({ label, value, valueStyle }: { label: string; value: string; valueStyle?: string }) {
   return (
     <View className="gap-y-0.5">
@@ -115,8 +122,6 @@ export default function JobDetailScreen() {
   const [showCompleteInput, setShowCompleteInput] = useState(false)
   const [completionNotes, setCompletionNotes] = useState('')
 
-  const canAct = isAdmin || user?.id === job?.assigned_to
-
   function handleStart() {
     if (!id) return
     Alert.alert('Start Job', 'Mark this job as in progress?', [
@@ -181,8 +186,8 @@ export default function JobDetailScreen() {
   const completedTasks = job.tasks?.filter((t) => t.status === 'completed').length ?? 0
   const totalTasks = job.tasks?.length ?? 0
 
-  const showStartButton = canAct && job.status === 'pending'
-  const showCompleteButton = canAct && job.status === 'in_progress'
+  const showStartButton = job.status === 'pending'
+  const showCompleteButton = job.status === 'in_progress'
   const hasAction = showStartButton || showCompleteButton
 
   return (
@@ -245,10 +250,10 @@ export default function JobDetailScreen() {
           </View>
           <View className="flex-row gap-x-4">
             <View className="flex-1">
-              <InfoRow label="Est. Duration" value={job.estimated_duration ? `${job.estimated_duration}h` : '—'} />
+              <InfoRow label="Est. Duration" value={formatDurationHours(job.estimated_duration)} />
             </View>
             <View className="flex-1">
-              <InfoRow label="Actual Duration" value={job.actual_duration ? `${job.actual_duration}h` : '—'} />
+              <InfoRow label="Actual Duration" value={formatDurationHours(job.actual_duration)} />
             </View>
           </View>
         </View>

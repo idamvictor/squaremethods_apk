@@ -131,4 +131,5 @@ export interface UpdateJobInput {
   equipment_id?: string | null
   team_id?: string
   assigned_to?: string
+  task_ids?: string[]
 }

@@ -15,6 +15,7 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 import { useJobById, useUpdateJob } from '@/services/jobs/jobs-queries'
 import { useTeams, useTeamMembers } from '@/services/teams/teams-queries'
 import { useEquipment } from '@/services/equipment/equipment-queries'
+import { useTasks } from '@/services/tasks/tasks-queries'
 import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import type { JobPriority } from '@/services/jobs/jobs-types'
 
@@ -99,18 +100,23 @@ export default function EditJobScreen() {
   const [assigneeName, setAssigneeName] = useState('')
   const [equipmentId, setEquipmentId] = useState('')
   const [equipmentName, setEquipmentName] = useState('')
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
+  const [selectedTaskTitles, setSelectedTaskTitles] = useState<string[]>([])
   const [dueDate, setDueDate] = useState<Date>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [estimatedDuration, setEstimatedDuration] = useState('')
   const [safetyNotes, setSafetyNotes] = useState('')
   const [initialized, setInitialized] = useState(false)
 
-  const [picker, setPicker] = useState<'team' | 'assignee' | 'equipment' | null>(null)
+  const [picker, setPicker] = useState<'team' | 'assignee' | 'equipment' | 'task' | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const { data: teamsData, isLoading: teamsLoading } = useTeams()
   const { data: membersData, isLoading: membersLoading } = useTeamMembers(teamId || undefined)
   const { data: equipmentData, isLoading: equipmentLoading } = useEquipment()
+  const { data: tasksData, isLoading: tasksLoading } = useTasks(
+    equipmentId ? { equipment_id: equipmentId } : undefined,
+  )
 
   // Pre-fill form once job loads
   useEffect(() => {
@@ -128,8 +134,10 @@ export default function EditJobScreen() {
       )
       setEquipmentId(job.equipment_id ?? '')
       setEquipmentName(job.equipment?.name ?? '')
+      setSelectedTaskIds((job.tasks ?? []).map((t) => t.id))
+      setSelectedTaskTitles((job.tasks ?? []).map((t) => t.title))
       if (job.due_date) setDueDate(new Date(job.due_date))
-      setEstimatedDuration(job.estimated_duration ? String(job.estimated_duration) : '')
+      setEstimatedDuration(job.estimated_duration ? String(job.estimated_duration / 60) : '')
       setSafetyNotes(job.safety_notes ?? '')
       setInitialized(true)
     }
@@ -144,13 +152,22 @@ export default function EditJobScreen() {
     { label: 'None', value: '' },
     ...(equipmentData?.data ?? []).map((e) => ({ label: e.name, value: e.id })),
   ]
+  const taskItems = (tasksData?.data ?? [])
+    .filter((t) => !selectedTaskIds.includes(t.id))
+    .map((t) => ({ label: t.title, value: t.id }))
+
+  function removeTask(taskId: string) {
+    const idx = selectedTaskIds.indexOf(taskId)
+    setSelectedTaskIds((prev) => prev.filter((_, i) => i !== idx))
+    setSelectedTaskTitles((prev) => prev.filter((_, i) => i !== idx))
+  }
 
   function validate() {
     const e: Record<string, string> = {}
     if (!title.trim()) e.title = 'Title is required'
     if (!teamId) e.team = 'Team is required'
     if (!assignedTo) e.assignedTo = 'Assignee is required'
-    if (!estimatedDuration || Number(estimatedDuration) <= 0) e.duration = 'Enter a valid duration'
+    if (selectedTaskIds.length === 0) e.tasks = 'Select at least one task'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -167,8 +184,10 @@ export default function EditJobScreen() {
         assigned_to: assignedTo,
         equipment_id: equipmentId || null,
         due_date: toISODate(dueDate),
-        estimated_duration: Number(estimatedDuration),
+        // Backend stores estimated_duration in minutes; the form collects hours.
+        estimated_duration: estimatedDuration ? Math.round(Number(estimatedDuration) * 60) : 0,
         safety_notes: safetyNotes.trim(),
+        task_ids: selectedTaskIds,
       },
       { onSuccess: () => router.back() },
     )
@@ -296,6 +315,46 @@ export default function EditJobScreen() {
           onPress={() => setPicker('equipment')}
         />
 
+        {/* Tasks */}
+        <View>
+          <View className="flex-row items-center justify-between mb-2">
+            <FieldLabel label="Select Task" required />
+            {!!equipmentId && (
+              <Pressable onPress={() => setPicker('task')} className="active:opacity-60">
+                <Text className="text-sm font-semibold text-blue-600">+ Add</Text>
+              </Pressable>
+            )}
+          </View>
+          {!equipmentId ? (
+            <View className="rounded-xl bg-blue-50 border border-blue-200 p-3">
+              <Text className="text-sm text-blue-700">
+                Select equipment first to see available tasks
+              </Text>
+            </View>
+          ) : (
+            <>
+              {selectedTaskTitles.length > 0 ? (
+                <View className="flex-row flex-wrap gap-2">
+                  {selectedTaskTitles.map((title2, i) => (
+                    <View
+                      key={selectedTaskIds[i]}
+                      className="flex-row items-center bg-blue-50 border border-blue-200 rounded-full px-3 py-1 gap-x-1.5"
+                    >
+                      <Text className="text-xs font-medium text-blue-700">{title2}</Text>
+                      <Pressable onPress={() => removeTask(selectedTaskIds[i])} hitSlop={4}>
+                        <Ionicons name="close" size={12} color="#1D4ED8" />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text className="text-sm text-gray-400 italic">No tasks selected</Text>
+              )}
+            </>
+          )}
+          <FieldError message={errors.tasks} />
+        </View>
+
         {/* Due Date */}
         <View>
           <FieldLabel label="Due Date" required />
@@ -321,16 +380,15 @@ export default function EditJobScreen() {
 
         {/* Duration */}
         <View>
-          <FieldLabel label="Estimated Duration (hours)" required />
+          <FieldLabel label="Estimated Duration (hours)" />
           <TextInput
             value={estimatedDuration}
-            onChangeText={(v) => { setEstimatedDuration(v); setErrors((e) => ({ ...e, duration: '' })) }}
+            onChangeText={setEstimatedDuration}
             placeholder="e.g. 2"
             keyboardType="numeric"
-            className={`h-12 rounded-xl border px-4 text-sm text-gray-800 bg-white ${errors.duration ? 'border-red-400' : 'border-gray-200'}`}
+            className="h-12 rounded-xl border border-gray-200 px-4 text-sm text-gray-800 bg-white"
             placeholderTextColor="#9CA3AF"
           />
-          <FieldError message={errors.duration} />
         </View>
 
         {/* Safety Notes */}
@@ -394,8 +452,30 @@ export default function EditJobScreen() {
         loading={equipmentLoading}
         onSelect={(value) => {
           const found = equipmentItems.find((e) => e.value === value)
+          if (value !== equipmentId) {
+            setSelectedTaskIds([])
+            setSelectedTaskTitles([])
+          }
           setEquipmentId(value)
           setEquipmentName(value ? (found?.label ?? '') : '')
+        }}
+      />
+
+      <BottomSheetPicker
+        visible={picker === 'task'}
+        onClose={() => setPicker(null)}
+        title="Select Task"
+        items={taskItems}
+        selected={null}
+        loading={tasksLoading}
+        onSelect={(value) => {
+          if (!selectedTaskIds.includes(value)) {
+            const found = taskItems.find((t) => t.value === value)
+            setSelectedTaskIds((prev) => [...prev, value])
+            setSelectedTaskTitles((prev) => [...prev, found?.label ?? value])
+            setErrors((e) => ({ ...e, tasks: '' }))
+          }
+          setPicker(null)
         }}
       />
     </View>
