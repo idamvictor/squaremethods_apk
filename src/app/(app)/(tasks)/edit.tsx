@@ -21,7 +21,10 @@ export default function EditTaskScreen() {
   const id = Array.isArray(params.id) ? params.id[0] : params.id
   const { data: task, isLoading: taskLoading } = useTaskById(id)
   const { mutate: updateTask, isPending, error: apiError } = useUpdateTask()
-  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment()
+  const [equipmentSearch, setEquipmentSearch] = useState('')
+  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment(
+    equipmentSearch ? { search: equipmentSearch } : undefined,
+  )
 
   const [title, setTitle] = useState('')
   const [existingJobAids, setExistingJobAids] = useState<JobAid[]>([])
@@ -201,6 +204,7 @@ export default function EditTaskScreen() {
         selected={null}
         searchable
         loading={equipmentLoading}
+        onSearchChange={setEquipmentSearch}
         onSelect={handleEquipmentSelect}
       />
     </View>

@@ -28,9 +28,12 @@ export default function CreateTaskScreen() {
   const [showJobAidPicker, setShowJobAidPicker] = useState(false)
   const [showEquipmentPicker, setShowEquipmentPicker] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [equipmentSearch, setEquipmentSearch] = useState('')
 
   const { data: jobAidsData, isLoading: jobAidsLoading } = useJobAids({ page: 1, limit: 100 })
-  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment()
+  const { data: equipmentData, isLoading: equipmentLoading } = useEquipment(
+    equipmentSearch ? { search: equipmentSearch } : undefined,
+  )
 
   const availableJobAidItems = (jobAidsData?.data ?? [])
     .filter((ja) => !selectedJobAidIds.includes(ja.id))
@@ -229,6 +232,7 @@ export default function CreateTaskScreen() {
         selected={null}
         searchable
         loading={equipmentLoading}
+        onSearchChange={setEquipmentSearch}
         onSelect={handleEquipmentSelect}
       />
     </View>

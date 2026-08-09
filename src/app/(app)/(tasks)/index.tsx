@@ -15,6 +15,7 @@ import { router } from 'expo-router'
 import { useTasks, useDeleteTask } from '@/services/tasks/tasks-queries'
 import { usePermissions } from '@/lib/permissions'
 import { AccessRestricted } from '@/components/ui/access-restricted'
+import { BottomSheetPicker } from '@/components/ui/bottom-sheet-picker'
 import type { Task } from '@/services/tasks/tasks-types'
 
 type JobAidFilter = 'all' | 'with' | 'without'
@@ -61,11 +62,14 @@ function TaskCard({
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets()
-  const { isTechnician } = usePermissions()
+  const { isAdmin } = usePermissions()
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [jobAidFilter, setJobAidFilter] = useState<JobAidFilter>('all')
+  const [equipmentFilter, setEquipmentFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [filterPicker, setFilterPicker] = useState<'equipment' | 'category' | null>(null)
   const [page, setPage] = useState(1)
   const [allItems, setAllItems] = useState<Task[]>([])
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -105,11 +109,24 @@ export default function TasksScreen() {
   }, [data, page])
 
   const rawItems = page === 1 ? (data?.data ?? allItems) : allItems
-  const displayItems = jobAidFilter === 'all'
+  const equipmentFilterItems = Array.from(
+    new Set(allItems.flatMap((t) => t.equipments.map((e) => e.name))),
+  ).map((name) => ({ label: name, value: name }))
+  const categoryFilterItems = Array.from(
+    new Set(allItems.flatMap((t) => t.jobAids.map((j) => j.category).filter(Boolean) as string[])),
+  ).map((cat) => ({ label: cat, value: cat }))
+
+  let displayItems = jobAidFilter === 'all'
     ? rawItems
     : jobAidFilter === 'with'
       ? rawItems.filter((t) => t.jobAids.length > 0)
       : rawItems.filter((t) => t.jobAids.length === 0)
+  if (equipmentFilter) {
+    displayItems = displayItems.filter((t) => t.equipments.some((e) => e.name === equipmentFilter))
+  }
+  if (categoryFilter) {
+    displayItems = displayItems.filter((t) => t.jobAids.some((j) => j.category === categoryFilter))
+  }
 
   const totalPages = data?.pagination?.pages ?? 1
   const hasMore = page < totalPages
@@ -123,7 +140,7 @@ export default function TasksScreen() {
     refetch()
   }, [refetch])
 
-  if (isTechnician) {
+  if (!isAdmin) {
     return <AccessRestricted />
   }
 
@@ -191,6 +208,30 @@ export default function TasksScreen() {
               </Text>
             </Pressable>
           ))}
+
+          <Pressable
+            onPress={() => setFilterPicker('equipment')}
+            className={`flex-row items-center gap-x-1 px-3 py-1.5 rounded-full border ${
+              equipmentFilter ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'
+            }`}
+          >
+            <Text className={`text-xs font-medium ${equipmentFilter ? 'text-white' : 'text-gray-600'}`} numberOfLines={1}>
+              {equipmentFilter || 'Equipment'}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={equipmentFilter ? '#FFFFFF' : '#9CA3AF'} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => setFilterPicker('category')}
+            className={`flex-row items-center gap-x-1 px-3 py-1.5 rounded-full border ${
+              categoryFilter ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'
+            }`}
+          >
+            <Text className={`text-xs font-medium capitalize ${categoryFilter ? 'text-white' : 'text-gray-600'}`} numberOfLines={1}>
+              {categoryFilter || 'Category'}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={categoryFilter ? '#FFFFFF' : '#9CA3AF'} />
+          </Pressable>
         </ScrollView>
 
         {/* Search */}
@@ -249,6 +290,30 @@ export default function TasksScreen() {
           }
         />
       )}
+
+      <BottomSheetPicker
+        visible={filterPicker === 'equipment'}
+        onClose={() => setFilterPicker(null)}
+        title="Filter by Equipment"
+        items={equipmentFilterItems}
+        selected={equipmentFilter || null}
+        onSelect={(value) => {
+          setEquipmentFilter(value)
+          setFilterPicker(null)
+        }}
+      />
+
+      <BottomSheetPicker
+        visible={filterPicker === 'category'}
+        onClose={() => setFilterPicker(null)}
+        title="Filter by Category"
+        items={categoryFilterItems}
+        selected={categoryFilter || null}
+        onSelect={(value) => {
+          setCategoryFilter(value)
+          setFilterPicker(null)
+        }}
+      />
     </View>
   )
 }

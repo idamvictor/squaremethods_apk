@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useTaskById, useDeleteTask } from '@/services/tasks/tasks-queries'
+import { usePermissions } from '@/lib/permissions'
 import type { JobAid, TaskEquipment } from '@/services/tasks/tasks-types'
 
 function formatDate(dateStr: string) {
@@ -23,10 +24,18 @@ function formatDate(dateStr: string) {
 function JobAidRow({ jobAid, isLast }: { jobAid: JobAid; isLast: boolean }) {
   return (
     <View>
-      <View className="px-4 py-3 gap-y-1.5">
+      <Pressable
+        onPress={() => router.push({ pathname: '/(app)/(job-aids)/[id]', params: { id: jobAid.id } })}
+        className="px-4 py-3 gap-y-1.5 active:bg-gray-50"
+      >
         <Text className="text-sm font-medium text-gray-800" numberOfLines={2}>
           {jobAid.title}
         </Text>
+        {!!jobAid.instruction && (
+          <Text className="text-xs text-gray-500" numberOfLines={2}>
+            {jobAid.instruction}
+          </Text>
+        )}
         <View className="flex-row items-center gap-x-1.5 flex-wrap gap-y-1">
           {!!jobAid.category && (
             <View className="bg-gray-100 rounded-full px-2 py-0.5">
@@ -51,8 +60,16 @@ function JobAidRow({ jobAid, isLast }: { jobAid: JobAid; isLast: boolean }) {
               <Text className="text-xs text-blue-600">{jobAid.estimated_duration}m</Text>
             </View>
           )}
+          <View className="flex-row items-center gap-x-0.5">
+            <Ionicons name="eye-outline" size={12} color="#9CA3AF" />
+            <Text className="text-xs text-gray-400">{jobAid.view_count}</Text>
+          </View>
+          <View className="flex-row items-center gap-x-0.5">
+            <Ionicons name="qr-code-outline" size={12} color="#9CA3AF" />
+            <Text className="text-xs text-gray-400">{jobAid.scan_count}</Text>
+          </View>
         </View>
-      </View>
+      </Pressable>
       {!isLast && <View className="h-px bg-gray-100 ml-4" />}
     </View>
   )
@@ -78,6 +95,7 @@ export default function TaskDetailScreen() {
   const id = Array.isArray(params.id) ? params.id[0] : params.id
   const { data: task, isLoading, error } = useTaskById(id)
   const { mutate: deleteTask } = useDeleteTask()
+  const { isAdmin } = usePermissions()
 
   function handleKebab() {
     Alert.alert('Task Actions', undefined, [
@@ -131,9 +149,11 @@ export default function TaskDetailScreen() {
         <Text className="flex-1 text-base font-bold text-gray-900" numberOfLines={1}>
           {task.title}
         </Text>
-        <Pressable onPress={handleKebab} hitSlop={8} className="active:opacity-60">
-          <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
-        </Pressable>
+        {isAdmin && (
+          <Pressable onPress={handleKebab} hitSlop={8} className="active:opacity-60">
+            <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 24 }}>
