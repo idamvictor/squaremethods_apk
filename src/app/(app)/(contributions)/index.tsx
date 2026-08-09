@@ -70,6 +70,18 @@ function isOverdue(dateStr: string | null) {
   return new Date(dateStr) < new Date()
 }
 
+// Applied via inline `style` rather than the `shadow-sm` / `active:opacity-*`
+// classNames — those trigger a NativeWind + Expo Router CSS-interop race
+// that throws "Couldn't find a navigation context" when a batch of
+// components mounts at once (e.g. swapping the Pending Approval list).
+const CARD_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.05,
+  shadowRadius: 2,
+  elevation: 2,
+}
+
 function FailureModeCard({
   item,
   onPress,
@@ -110,7 +122,8 @@ function FailureModeCard({
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
-      className="bg-white rounded-2xl p-4 shadow-sm active:opacity-80"
+      className="bg-white rounded-2xl p-4"
+      style={({ pressed }) => [CARD_SHADOW, pressed && { opacity: 0.8 }]}
     >
       <View className="flex-row items-start gap-x-2.5">
         <View className={`w-2.5 h-2.5 rounded-full mt-1.5 ${CONTRIBUTION_TYPE_DOT[item.priority] ?? 'bg-gray-300'}`} />
@@ -329,8 +342,9 @@ export default function FailureModeScreen() {
           <Pressable
             onPress={() => setViewMode('all')}
             className={`flex-row items-center gap-x-1.5 px-3 py-1.5 rounded-md ${
-              viewMode === 'all' ? 'bg-white shadow-sm' : ''
+              viewMode === 'all' ? 'bg-white' : ''
             }`}
+            style={viewMode === 'all' ? CARD_SHADOW : undefined}
           >
             <Ionicons name="git-pull-request-outline" size={14} color={viewMode === 'all' ? '#111827' : '#6B7280'} />
             <Text className={`text-xs font-semibold ${viewMode === 'all' ? 'text-gray-900' : 'text-gray-500'}`}>
@@ -340,8 +354,9 @@ export default function FailureModeScreen() {
           <Pressable
             onPress={() => setViewMode('pending-approval')}
             className={`flex-row items-center gap-x-1.5 px-3 py-1.5 rounded-md ${
-              viewMode === 'pending-approval' ? 'bg-white shadow-sm' : ''
+              viewMode === 'pending-approval' ? 'bg-white' : ''
             }`}
+            style={viewMode === 'pending-approval' ? CARD_SHADOW : undefined}
           >
             <Ionicons
               name="checkmark-done-outline"
