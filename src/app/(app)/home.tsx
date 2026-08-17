@@ -8,7 +8,7 @@ export default function DashboardScreen() {
   const { data: profileData } = useProfile()
   const role = profileData?.data?.role ?? storedRole
 
-  if (role === 'technician') {
+  if (role === 'technician' || role === 'user') {
     return <TechnicianDashboard />
   }
 

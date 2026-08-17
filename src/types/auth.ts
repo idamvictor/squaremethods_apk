@@ -44,6 +44,12 @@ export interface AuthResponse {
   }
 }
 
+export interface RegisterResponse {
+  success: boolean
+  message: string
+  emailVerificationRequired?: boolean
+}
+
 export interface LoginInput {
   email: string
   password: string

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
+import { useCompanyStore } from '@/store/company-store'
 import {
   useChatSessions,
   useSendChatMessage,
@@ -20,14 +21,12 @@ import {
 } from '@/services/chat/chat-queries'
 import type { ChatMessage, ChatSession } from '@/services/chat/chat-types'
 
-const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG ?? 'chowdeck'
-
 function slugify(text: string) {
   return text.toLowerCase().trim().replace(/ /g, '-').replace(/[^\w-]+/g, '')
 }
 
 function buildEquipmentPath(equipmentId: string, locationName: string) {
-  let path = COMPANY_SLUG
+  let path = useCompanyStore.getState().companySlug ?? ''
   if (locationName) path += `/${slugify(locationName)}`
   path += `/${equipmentId}`
   return path

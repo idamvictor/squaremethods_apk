@@ -6,6 +6,7 @@ import type {
   AuthResponse,
   LoginInput,
   RegisterInput,
+  RegisterResponse,
   OtpPayload,
   ForgotPasswordInput,
   ResetPasswordInput,
@@ -29,10 +30,11 @@ export function useLogin() {
 export function useRegister() {
   return useMutation({
     mutationFn: async (data: RegisterInput) => {
-      const res = await apiClient.post('/auth/register', {
+      const res = await apiClient.post<RegisterResponse>('/auth/register', {
         ...data,
         phone: data.phone ?? 'Not provided',
         company_address: data.company_address ?? 'Not provided',
+        company_email: data.email,
       })
       return res.data
     },

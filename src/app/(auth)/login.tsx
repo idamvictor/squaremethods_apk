@@ -4,7 +4,7 @@ import {
   View,
 } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
-import { Link } from 'expo-router'
+import { Link, router } from 'expo-router'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { PasswordInput } from '@/components/auth/PasswordInput'
 import { useLogin } from '@/lib/auth'
+import { useCompanyStore } from '@/store/company-store'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -22,6 +23,8 @@ type LoginForm = z.infer<typeof schema>
 
 export default function LoginScreen() {
   const { mutate: login, isPending, error } = useLogin()
+  const companyName = useCompanyStore((s) => s.companyName)
+  const clearCompany = useCompanyStore((s) => s.clearCompany)
 
   const {
     control,
@@ -124,6 +127,20 @@ export default function LoginScreen() {
               </Pressable>
             </Link>
           </View>
+
+          {!!companyName && (
+            <Pressable
+              className="items-center"
+              onPress={() => {
+                clearCompany()
+                router.replace('/(auth)/company')
+              }}
+            >
+              <Text className="text-xs text-gray-400">
+                Not <Text className="font-semibold text-gray-500">{companyName}</Text>? Change company
+              </Text>
+            </Pressable>
+          )}
         </View>
       </KeyboardAwareScrollView>
     </View>

@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { useAuthStore } from '@/store/auth-store'
+import { useCompanyStore } from '@/store/company-store'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,10 +20,13 @@ export default function RootLayout() {
   const isLoading = useAuthStore((s) => s.isLoading)
   const needsLoginRedirect = useAuthStore((s) => s.needsLoginRedirect)
   const clearLoginRedirect = useAuthStore((s) => s.clearLoginRedirect)
+  const loadCompany = useCompanyStore((s) => s.loadCompany)
+  const isCompanyLoading = useCompanyStore((s) => s.isLoading)
 
   useEffect(() => {
     loadToken()
-  }, [loadToken])
+    loadCompany()
+  }, [loadToken, loadCompany])
 
   useEffect(() => {
     if (needsLoginRedirect && !isLoading) {
@@ -31,7 +35,7 @@ export default function RootLayout() {
     }
   }, [needsLoginRedirect, isLoading, clearLoginRedirect])
 
-  if (isLoading) {
+  if (isLoading || isCompanyLoading) {
     return null
   }
 

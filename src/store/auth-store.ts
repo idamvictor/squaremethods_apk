@@ -1,10 +1,10 @@
 import { create } from 'zustand'
 import * as SecureStore from 'expo-secure-store'
 import type { User, Company } from '@/types/auth'
+import { useCompanyStore } from '@/store/company-store'
 
 const TOKEN_KEY = 'auth_token'
 const COMPANY_KEY = 'auth_company'
-const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG ?? 'chowdeck'
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.squaremethods.com/api'
 
 function decodeJwtExp(token: string): number | null {
@@ -71,12 +71,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         const exp = decodeJwtExp(token)
         if (exp && exp * 1000 > Date.now()) {
           try {
+            const companySlug = useCompanyStore.getState().companySlug
             const res = await fetch(`${API_BASE}/users/profile`, {
               headers: {
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
-                'x-company-slug': COMPANY_SLUG,
-                'x-company': COMPANY_SLUG,
+                ...(companySlug ? { 'x-company-slug': companySlug, 'x-company': companySlug } : {}),
                 ...(company?.id ? { 'x-company-id': company.id } : {}),
               },
             })

@@ -5,7 +5,7 @@ import {
   View,
 } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
-import { Link } from 'expo-router'
+import { Link, router } from 'expo-router'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -58,7 +58,15 @@ export default function RegisterScreen() {
         email: data.email,
         password: data.password,
       },
-      { onSuccess: () => setStep('otp') }
+      {
+        onSuccess: (res) => {
+          if (res.emailVerificationRequired === false) {
+            router.replace('/(auth)/login')
+          } else {
+            setStep('otp')
+          }
+        },
+      }
     )
   }
 
