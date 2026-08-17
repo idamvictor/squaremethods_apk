@@ -30,6 +30,13 @@ apiClient.interceptors.response.use(
       router.replace('/(auth)/suspended')
       return Promise.reject(error)
     }
+    if (
+      error.response?.data?.code === 'COMPANY_CONTEXT_REQUIRED' ||
+      /company context required/i.test(error.response?.data?.message ?? '')
+    ) {
+      await useCompanyStore.getState().clearCompany()
+      return Promise.reject(error)
+    }
     if (error.response?.status === 401) {
       await useAuthStore.getState().logout()
       useAuthStore.setState({ needsLoginRedirect: true })

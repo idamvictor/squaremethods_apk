@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { useAuthStore } from '@/store/auth-store'
 import { useCompanyStore } from '@/store/company-store'
+import { AttachCompanyModal } from '@/components/auth/attach-company-modal'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +23,7 @@ export default function RootLayout() {
   const clearLoginRedirect = useAuthStore((s) => s.clearLoginRedirect)
   const loadCompany = useCompanyStore((s) => s.loadCompany)
   const isCompanyLoading = useCompanyStore((s) => s.isLoading)
+  const companySlug = useCompanyStore((s) => s.companySlug)
 
   useEffect(() => {
     loadToken()
@@ -45,6 +47,7 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
             <Stack screenOptions={{ headerShown: false }} />
+            <AttachCompanyModal visible={!companySlug} />
           </QueryClientProvider>
         </SafeAreaProvider>
       </KeyboardProvider>

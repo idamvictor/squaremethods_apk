@@ -4,7 +4,7 @@ import {
   View,
 } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
-import { Link, router } from 'expo-router'
+import { Link } from 'expo-router'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -131,10 +131,7 @@ export default function LoginScreen() {
           {!!companyName && (
             <Pressable
               className="items-center"
-              onPress={() => {
-                clearCompany()
-                router.replace('/(auth)/company')
-              }}
+              onPress={() => clearCompany()}
             >
               <Text className="text-xs text-gray-400">
                 Not <Text className="font-semibold text-gray-500">{companyName}</Text>? Change company
