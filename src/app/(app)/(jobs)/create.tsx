@@ -98,7 +98,7 @@ export default function CreateJobScreen() {
   const [equipmentName, setEquipmentName] = useState('')
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [selectedTaskTitles, setSelectedTaskTitles] = useState<string[]>([])
-  const [dueDate, setDueDate] = useState<Date>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
+  const [dueDate, setDueDate] = useState<Date>(() => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [estimatedDuration, setEstimatedDuration] = useState('')
   const [safetyNotes, setSafetyNotes] = useState('')

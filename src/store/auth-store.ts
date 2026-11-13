@@ -2,10 +2,10 @@ import { create } from 'zustand'
 import * as SecureStore from 'expo-secure-store'
 import type { User, Company } from '@/types/auth'
 import { useCompanyStore } from '@/store/company-store'
+import { API_BASE_URL as API_BASE } from '@/lib/config'
 
 const TOKEN_KEY = 'auth_token'
 const COMPANY_KEY = 'auth_company'
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.squaremethods.com/api'
 
 function decodeJwtExp(token: string): number | null {
   try {

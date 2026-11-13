@@ -93,9 +93,13 @@ function LocationFormModal({
 }: LocationFormModalProps) {
   const [name, setName] = useState(initialName)
 
-  useEffect(() => {
+  // Reset the name field each time the modal opens (or its initial value changes)
+  const openKey = visible ? initialName : null
+  const [prevOpenKey, setPrevOpenKey] = useState(openKey)
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey)
     if (visible) setName(initialName)
-  }, [visible, initialName])
+  }
 
   function handleSave() {
     const trimmed = name.trim()

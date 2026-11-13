@@ -41,7 +41,7 @@ export function AdminDashboard() {
         <Text className="text-2xl font-bold text-gray-900">
           {getGreeting()}{user?.first_name ? `, ${user.first_name}` : ''} 👋
         </Text>
-        <Text className="text-sm text-gray-500">Here's what's happening today</Text>
+        <Text className="text-sm text-gray-500">Here’s what’s happening today</Text>
       </View>
 
       {/* Error state */}

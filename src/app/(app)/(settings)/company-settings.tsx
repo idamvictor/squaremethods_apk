@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -19,12 +19,15 @@ export default function CompanySettingsScreen() {
   const [address, setAddress] = useState('')
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; address?: string }>({})
 
-  useEffect(() => {
+  // Re-sync the form whenever the company record changes
+  const [syncedCompany, setSyncedCompany] = useState<typeof company>()
+  if (company !== syncedCompany) {
+    setSyncedCompany(company)
     if (company) {
       setName(company.name ?? '')
       setAddress(company.address ?? '')
     }
-  }, [company])
+  }
 
   function validate() {
     const errors: typeof fieldErrors = {}

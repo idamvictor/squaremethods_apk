@@ -69,7 +69,7 @@ export default function ForgotPasswordScreen() {
           <View className="gap-y-1">
             <Text className="text-3xl font-bold text-gray-900">Forgot password?</Text>
             <Text className="text-base text-gray-500">
-              Enter your email and we'll send you a reset link.
+              Enter your email and we’ll send you a reset link.
             </Text>
           </View>
 

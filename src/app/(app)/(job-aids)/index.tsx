@@ -202,7 +202,7 @@ export default function JobAidsScreen() {
     equipment_id: equipmentFilter?.id,
   }
 
-  const { data, isLoading, refetch, isFetching } = useJobAids(queryParams)
+  const { data, refetch, isFetching } = useJobAids(queryParams)
 
   useEffect(() => {
     if (data?.data) {

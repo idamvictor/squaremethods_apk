@@ -1,3 +1,4 @@
+import { WEB_BASE_URL } from '@/lib/config'
 import { useState } from 'react'
 import {
   ActivityIndicator,
@@ -21,7 +22,6 @@ import {
   useJobAidById,
 } from '@/services/job-aids/job-aids-queries'
 import type { JobAid, JobAidStatus, Procedure } from '@/services/job-aids/job-aids-types'
-import { useAuthStore } from '@/store/auth-store'
 import { usePermissions } from '@/lib/permissions'
 import { useJobAidApprovalActions } from '@/hooks/use-job-aid-approval-actions'
 
@@ -195,7 +195,6 @@ function ApprovalActionsBar({ jobAid }: { jobAid: JobAid }) {
 export default function JobAidDetailScreen() {
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
-  const { user } = useAuthStore()
   const { isTechnician } = usePermissions()
   const isAdmin = !isTechnician
 
@@ -245,7 +244,7 @@ export default function JobAidDetailScreen() {
 
   function handleShare() {
     if (!jobAid) return
-    const webBaseUrl = process.env.EXPO_PUBLIC_WEB_BASE_URL
+    const webBaseUrl = WEB_BASE_URL
     const path = `/job-aids/${jobAid.id}`
     Clipboard.setString(webBaseUrl ? `${webBaseUrl}${path}` : path)
     Alert.alert('Link copied', 'The job aid link has been copied to clipboard.')

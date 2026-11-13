@@ -1,8 +1,9 @@
-import axios from 'axios'
+import { create } from 'axios'
+import { CHAT_API_BASE_URL } from '@/lib/config'
 import { useAuthStore } from '@/store/auth-store'
 
-const chatApiClient = axios.create({
-  baseURL: 'https://chatapi.squaremethods.com/prod',
+const chatApiClient = create({
+  baseURL: CHAT_API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

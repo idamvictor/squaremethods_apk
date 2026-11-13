@@ -8,14 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import apiClient from '@/lib/axios'
 import { useCompanyStore } from '@/store/company-store'
+import { DEFAULT_COMPANY_SLUG as DEFAULT_SLUG } from '@/lib/config'
 
 const schema = z.object({
   company: z.string().min(1, 'Enter your company name or code'),
 })
 
 type CompanyForm = z.infer<typeof schema>
-
-const DEFAULT_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG
 
 export function AttachCompanyModal({ visible }: { visible: boolean }) {
   const setCompany = useCompanyStore((s) => s.setCompany)

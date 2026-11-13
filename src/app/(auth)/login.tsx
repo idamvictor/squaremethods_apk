@@ -120,7 +120,7 @@ export default function LoginScreen() {
 
           {/* Footer */}
           <View className="flex-row items-center justify-center gap-x-1">
-            <Text className="text-sm text-gray-500">Don't have an account?</Text>
+            <Text className="text-sm text-gray-500">Don’t have an account?</Text>
             <Link href="/(auth)/register" asChild>
               <Pressable>
                 <Text className="text-sm font-semibold text-blue-600">Register</Text>

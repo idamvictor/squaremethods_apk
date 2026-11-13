@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -24,13 +24,12 @@ export default function EditTeamScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [initialized, setInitialized] = useState(false)
 
-  useEffect(() => {
-    if (team && !initialized) {
-      setName(team.name ?? '')
-      setDescription(team.description ?? '')
-      setInitialized(true)
-    }
-  }, [team, initialized])
+  // Pre-fill once the record loads (runs during render, guarded by the flag)
+  if (team && !initialized) {
+    setName(team.name ?? '')
+    setDescription(team.description ?? '')
+    setInitialized(true)
+  }
 
   function validate() {
     const e: Record<string, string> = {}

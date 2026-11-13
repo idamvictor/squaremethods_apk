@@ -232,11 +232,11 @@ export interface SyncEquipmentTypeDefaultsResponse {
     dryRun: boolean
     companiesProcessed: number
     totalAdded: number
-    perCompany: Array<{
+    perCompany: {
       companyId: string
       addedCount: number
       skippedCount: number
       added: string[]
-    }>
+    }[]
   }
 }

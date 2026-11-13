@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   ScrollView,
   Text,
@@ -92,7 +91,7 @@ export default function TeamDetailScreen() {
   const { data: team, isLoading, error } = useTeamById(id)
   const { mutate: addMember, isPending: isAdding } = useAddTeamMember()
   const { mutate: removeMember } = useRemoveTeamMember()
-  const { mutate: deleteTeam, isPending: isDeleting } = useDeleteTeam()
+  const { mutate: deleteTeam} = useDeleteTeam()
 
   const [showAddMember, setShowAddMember] = useState(false)
   const { data: companyUsers, isLoading: usersLoading } = useCompanyUsers()

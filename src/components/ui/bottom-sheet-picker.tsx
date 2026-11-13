@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Animated,
   FlatList,
@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
+import { useSheetSlide } from '@/hooks/use-sheet-slide'
 
 export interface PickerItem {
   label: string
@@ -47,26 +48,20 @@ export function BottomSheetPicker({
   loading = false,
   onSearchChange,
 }: BottomSheetPickerProps) {
-  const slideAnim = useRef(new Animated.Value(400)).current
+  const slideAnim = useSheetSlide(visible, 400)
   const [search, setSearch] = useState('')
+  const [prevVisible, setPrevVisible] = useState(visible)
 
+  // Clear the search box each time the sheet opens
+  if (visible !== prevVisible) {
+    setPrevVisible(visible)
+    if (visible) setSearch('')
+  }
+
+  // Tell the parent the search was cleared (parent state, so it stays in an effect)
   useEffect(() => {
-    if (visible) {
-      setSearch('')
-      onSearchChange?.('')
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        damping: 20,
-        stiffness: 200,
-      }).start()
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: 400,
-        duration: 200,
-        useNativeDriver: true,
-      }).start()
-    }
+    if (visible) onSearchChange?.('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on open; parent callback is often an inline fn
   }, [visible])
 
   const filtered = searchable && search.trim()

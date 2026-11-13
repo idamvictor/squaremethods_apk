@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Platform,
@@ -74,19 +74,18 @@ export default function EditFailureModeScreen() {
   )
   const equipmentItems = (equipmentData?.data ?? []).map((e) => ({ label: e.name, value: e.id }))
 
-  useEffect(() => {
-    if (fm && !initialized) {
-      setTitle(fm.title ?? '')
-      setStatus(fm.status ?? 'open')
-      setContributionType(fm.priority ?? 'Problem Solved')
-      setResolutions(fm.resolutions ?? [])
-      if (fm.due_date) setDueDate(new Date(fm.due_date))
-      setImage(fm.image ?? '')
-      setEquipmentId(fm.equipment_id ?? '')
-      setEquipmentName(fm.equipment?.name ?? '')
-      setInitialized(true)
-    }
-  }, [fm, initialized])
+  // Pre-fill once the record loads (runs during render, guarded by the flag)
+  if (fm && !initialized) {
+    setTitle(fm.title ?? '')
+    setStatus(fm.status ?? 'open')
+    setContributionType(fm.priority ?? 'Problem Solved')
+    setResolutions(fm.resolutions ?? [])
+    if (fm.due_date) setDueDate(new Date(fm.due_date))
+    setImage(fm.image ?? '')
+    setEquipmentId(fm.equipment_id ?? '')
+    setEquipmentName(fm.equipment?.name ?? '')
+    setInitialized(true)
+  }
 
   function addResolution() {
     const trimmed = resolutionInput.trim()
@@ -221,7 +220,7 @@ export default function EditFailureModeScreen() {
             </Text>
           </View>
           <Text className="text-xs text-gray-400 mt-1.5">
-            Status changes through Approve/Reopen on the contribution's detail screen.
+            Status changes through Approve/Reopen on the contribution’s detail screen.
           </Text>
         </View>
 

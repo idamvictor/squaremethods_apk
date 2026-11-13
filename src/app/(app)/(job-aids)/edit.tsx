@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -103,20 +103,19 @@ export default function EditJobAidScreen() {
     value: e.id,
   }))
 
-  useEffect(() => {
-    if (data?.data && !hydrated) {
-      const ja = data.data
-      setImage(ja.image ?? '')
-      setTitle(ja.title)
-      setCategory(ja.category ?? '')
-      setInstruction(ja.instruction)
-      setDuration(ja.estimated_duration != null ? String(ja.estimated_duration) : '')
-      setStatus(ja.status)
-      setSelectedEquipmentIds(ja.assignedEquipments.map((e) => e.id))
-      setSelectedEquipmentNames(ja.assignedEquipments.map((e) => e.name))
-      setHydrated(true)
-    }
-  }, [data, hydrated])
+  // Pre-fill once the record loads (runs during render, guarded by the flag)
+  if (data?.data && !hydrated) {
+    const ja = data.data
+    setImage(ja.image ?? '')
+    setTitle(ja.title)
+    setCategory(ja.category ?? '')
+    setInstruction(ja.instruction)
+    setDuration(ja.estimated_duration != null ? String(ja.estimated_duration) : '')
+    setStatus(ja.status)
+    setSelectedEquipmentIds(ja.assignedEquipments.map((e) => e.id))
+    setSelectedEquipmentNames(ja.assignedEquipments.map((e) => e.name))
+    setHydrated(true)
+  }
 
   function validate() {
     const e: Record<string, string> = {}
@@ -297,7 +296,7 @@ export default function EditJobAidScreen() {
             </Text>
           </View>
           <Text className="text-xs text-gray-400 mt-1.5">
-            Status changes through Submit for Approval, Approve, and Unpublish on the job aid's detail screen.
+            Status changes through Submit for Approval, Approve, and Unpublish on the job aid’s detail screen.
           </Text>
         </View>
 

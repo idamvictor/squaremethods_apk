@@ -1,10 +1,11 @@
-import axios from 'axios'
+import { create } from 'axios'
+import { API_BASE_URL } from '@/lib/config'
 import { router } from 'expo-router'
 import { useAuthStore } from '@/store/auth-store'
 import { useCompanyStore } from '@/store/company-store'
 
-const apiClient = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.squaremethods.com/api',
+const apiClient = create({
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

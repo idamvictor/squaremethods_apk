@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/lib/axios'
 import chatApiClient from '@/lib/chat-axios'
 import type {
-  BrowseFile,
   CreateJobAidInput,
   CreateProcedureInput,
   DuplicateJobAidInput,

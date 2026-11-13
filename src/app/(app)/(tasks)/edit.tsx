@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -34,15 +34,14 @@ export default function EditTaskScreen() {
   const [initialized, setInitialized] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    if (task && !initialized) {
-      setTitle(task.title ?? '')
-      setExistingJobAids(task.jobAids ?? [])
-      setSelectedEquipmentIds(task.equipment_ids ?? [])
-      setSelectedEquipments(task.equipments ?? [])
-      setInitialized(true)
-    }
-  }, [task, initialized])
+  // Pre-fill once the record loads (runs during render, guarded by the flag)
+  if (task && !initialized) {
+    setTitle(task.title ?? '')
+    setExistingJobAids(task.jobAids ?? [])
+    setSelectedEquipmentIds(task.equipment_ids ?? [])
+    setSelectedEquipments(task.equipments ?? [])
+    setInitialized(true)
+  }
 
   const availableEquipmentItems = (equipmentData?.data ?? [])
     .filter((e) => !selectedEquipmentIds.includes(e.id))

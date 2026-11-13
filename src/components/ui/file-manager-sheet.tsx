@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Animated,
@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
+import { useSheetSlide } from '@/hooks/use-sheet-slide'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { useFiles, useUploadFile } from '@/services/job-aids/job-aids-queries'
@@ -280,26 +281,15 @@ export function FileManagerSheet({
   onSelect,
   folder = 'job-aids',
 }: FileManagerSheetProps) {
-  const slideAnim = useRef(new Animated.Value(SHEET_MAX_HEIGHT)).current
+  const slideAnim = useSheetSlide(visible, SHEET_MAX_HEIGHT)
   const [tab, setTab] = useState<Tab>('browse')
+  const [prevVisible, setPrevVisible] = useState(visible)
 
-  useEffect(() => {
-    if (visible) {
-      setTab('browse')
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        damping: 20,
-        stiffness: 200,
-      }).start()
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: SHEET_MAX_HEIGHT,
-        duration: 200,
-        useNativeDriver: true,
-      }).start()
-    }
-  }, [visible])
+  // Reset to the Browse tab each time the sheet opens
+  if (visible !== prevVisible) {
+    setPrevVisible(visible)
+    if (visible) setTab('browse')
+  }
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>

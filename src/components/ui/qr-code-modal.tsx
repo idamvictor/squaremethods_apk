@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { ActivityIndicator, Alert, Animated, Modal, Pressable, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { File, Paths } from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
 import { Ionicons } from '@expo/vector-icons'
+import { useSheetSlide } from '@/hooks/use-sheet-slide'
 import {
   useEquipmentQRCode,
   useRegenerateEquipmentQRCode,
@@ -17,30 +18,13 @@ interface QRCodeModalProps {
 }
 
 export function QRCodeModal({ visible, onClose, equipmentId, equipmentName }: QRCodeModalProps) {
-  const slideAnim = useRef(new Animated.Value(400)).current
+  const slideAnim = useSheetSlide(visible, 400)
   const [isDownloading, setIsDownloading] = useState(false)
 
   const { data, isLoading } = useEquipmentQRCode(visible ? equipmentId : undefined)
   const regenerateMutation = useRegenerateEquipmentQRCode()
 
   const url = data?.data.url ?? null
-
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        damping: 20,
-        stiffness: 200,
-      }).start()
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: 400,
-        duration: 200,
-        useNativeDriver: true,
-      }).start()
-    }
-  }, [visible])
 
   async function handleDownload() {
     if (!url) return

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -22,13 +22,16 @@ export default function EditProfileScreen() {
   const [phone, setPhone] = useState('')
   const [fieldErrors, setFieldErrors] = useState<{ firstName?: string; lastName?: string }>({})
 
-  useEffect(() => {
+  // Re-sync the form whenever the user record changes
+  const [syncedUser, setSyncedUser] = useState<typeof user>()
+  if (user !== syncedUser) {
+    setSyncedUser(user)
     if (user) {
       setFirstName(user.first_name ?? '')
       setLastName(user.last_name ?? '')
       setPhone(user.phone ?? '')
     }
-  }, [user])
+  }
 
   function validate() {
     const errors: typeof fieldErrors = {}

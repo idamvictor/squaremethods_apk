@@ -126,7 +126,7 @@ export default function FailureModeDetailScreen() {
   const id = Array.isArray(params.id) ? params.id[0] : params.id
 
   const { data: fm, isLoading, error } = useFailureModeById(id)
-  const { mutate: deleteFm, isPending: isDeleting } = useDeleteFailureMode()
+  const { mutate: deleteFm} = useDeleteFailureMode()
   const [imageViewerVisible, setImageViewerVisible] = useState(false)
 
   function handleDelete() {

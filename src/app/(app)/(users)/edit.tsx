@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -39,15 +39,14 @@ export default function EditUserScreen() {
   const [initialized, setInitialized] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    if (userData && !initialized) {
-      setFirstName(userData.first_name ?? '')
-      setLastName(userData.last_name ?? '')
-      setPhone(userData.phone ?? '')
-      setRole(userData.role ?? '')
-      setInitialized(true)
-    }
-  }, [userData, initialized])
+  // Pre-fill once the record loads (runs during render, guarded by the flag)
+  if (userData && !initialized) {
+    setFirstName(userData.first_name ?? '')
+    setLastName(userData.last_name ?? '')
+    setPhone(userData.phone ?? '')
+    setRole(userData.role ?? '')
+    setInitialized(true)
+  }
 
   const selectedRoleLabel = ROLE_ITEMS.find((r) => r.value === role)?.label ?? ''
 

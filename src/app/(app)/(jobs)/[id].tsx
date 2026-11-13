@@ -116,7 +116,7 @@ export default function JobDetailScreen() {
   const { data: job, isLoading, error } = useJobById(id)
   const { mutate: startJob, isPending: isStarting } = useStartJob()
   const { mutate: completeJob, isPending: isCompleting } = useCompleteJob()
-  const { mutate: deleteJob, isPending: isDeleting } = useDeleteJob()
+  const { mutate: deleteJob} = useDeleteJob()
   const { isPending: isUpdatingTask } = useUpdateTaskStatus()
 
   const [showCompleteInput, setShowCompleteInput] = useState(false)

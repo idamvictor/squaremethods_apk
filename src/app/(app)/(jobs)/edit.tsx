@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   Platform,
@@ -102,7 +102,7 @@ export default function EditJobScreen() {
   const [equipmentName, setEquipmentName] = useState('')
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [selectedTaskTitles, setSelectedTaskTitles] = useState<string[]>([])
-  const [dueDate, setDueDate] = useState<Date>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
+  const [dueDate, setDueDate] = useState<Date>(() => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [estimatedDuration, setEstimatedDuration] = useState('')
   const [safetyNotes, setSafetyNotes] = useState('')
@@ -121,30 +121,28 @@ export default function EditJobScreen() {
     equipmentId ? { equipment_id: equipmentId } : undefined,
   )
 
-  // Pre-fill form once job loads
-  useEffect(() => {
-    if (job && !initialized) {
-      setTitle(job.title ?? '')
-      setDescription(job.description ?? '')
-      setPriority(job.priority ?? 'medium')
-      setTeamId(job.team_id ?? '')
-      setTeamName(job.team?.name ?? '')
-      setAssignedTo(job.assigned_to ?? '')
-      setAssigneeName(
-        job.assignedUser
-          ? `${job.assignedUser.first_name} ${job.assignedUser.last_name}`.trim()
-          : '',
-      )
-      setEquipmentId(job.equipment_id ?? '')
-      setEquipmentName(job.equipment?.name ?? '')
-      setSelectedTaskIds((job.tasks ?? []).map((t) => t.id))
-      setSelectedTaskTitles((job.tasks ?? []).map((t) => t.title))
-      if (job.due_date) setDueDate(new Date(job.due_date))
-      setEstimatedDuration(job.estimated_duration ? String(job.estimated_duration / 60) : '')
-      setSafetyNotes(job.safety_notes ?? '')
-      setInitialized(true)
-    }
-  }, [job, initialized])
+  // Pre-fill once the record loads (runs during render, guarded by the flag)
+  if (job && !initialized) {
+    setTitle(job.title ?? '')
+    setDescription(job.description ?? '')
+    setPriority(job.priority ?? 'medium')
+    setTeamId(job.team_id ?? '')
+    setTeamName(job.team?.name ?? '')
+    setAssignedTo(job.assigned_to ?? '')
+    setAssigneeName(
+      job.assignedUser
+        ? `${job.assignedUser.first_name} ${job.assignedUser.last_name}`.trim()
+        : '',
+    )
+    setEquipmentId(job.equipment_id ?? '')
+    setEquipmentName(job.equipment?.name ?? '')
+    setSelectedTaskIds((job.tasks ?? []).map((t) => t.id))
+    setSelectedTaskTitles((job.tasks ?? []).map((t) => t.title))
+    if (job.due_date) setDueDate(new Date(job.due_date))
+    setEstimatedDuration(job.estimated_duration ? String(job.estimated_duration / 60) : '')
+    setSafetyNotes(job.safety_notes ?? '')
+    setInitialized(true)
+  }
 
   const teamItems = (teamsData?.data ?? []).map((t) => ({ label: t.name, value: t.id }))
   const memberItems = (membersData?.data ?? []).map((m) => ({

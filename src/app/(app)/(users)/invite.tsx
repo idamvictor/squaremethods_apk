@@ -1,3 +1,4 @@
+import { WEB_BASE_URL } from '@/lib/config'
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -66,7 +67,7 @@ function InvitationCard({
   }
 
   function handleCopyLink() {
-    const base = process.env.EXPO_PUBLIC_WEB_BASE_URL ?? ''
+    const base = WEB_BASE_URL
     Clipboard.setString(`${base}/invite?token=${item.token}`)
     Alert.alert('Link copied', 'The invitation link has been copied to clipboard.')
   }

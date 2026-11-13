@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Animated,
   Modal,
@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocationsTree } from '@/services/locations/locations-queries'
+import { useSheetSlide } from '@/hooks/use-sheet-slide'
 import type { Location } from '@/services/locations/locations-types'
 
 interface LocationTreePickerProps {
@@ -129,38 +130,23 @@ export function LocationTreePicker({
   onSelect,
   title = 'Select Location',
 }: LocationTreePickerProps) {
-  const slideAnim = useRef(new Animated.Value(500)).current
+  const slideAnim = useSheetSlide(visible, 500)
   const [search, setSearch] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const { data, isLoading } = useLocationsTree()
-  const roots = data?.data ?? []
+  const roots = useMemo(() => data?.data ?? [], [data])
 
   // Initialize expanded state when data loads or sheet opens
-  useEffect(() => {
+  const initKey = `${visible}-${roots.length}`
+  const [prevInitKey, setPrevInitKey] = useState(initKey)
+  if (initKey !== prevInitKey) {
+    setPrevInitKey(initKey)
     if (visible && roots.length > 0) {
       setExpandedIds(initExpanded(roots))
       setSearch('')
     }
-  }, [visible, roots.length])
-
-  // Slide animation
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        damping: 20,
-        stiffness: 200,
-      }).start()
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: 500,
-        duration: 200,
-        useNativeDriver: true,
-      }).start()
-    }
-  }, [visible])
+  }
 
   function handleToggle(id: string) {
     setExpandedIds((prev) => {
